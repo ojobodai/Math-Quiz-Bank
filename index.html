@@ -1,937 +1,976 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Basic 8 Mathematics Quiz</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
-
-  :root {
-    --bg: #0d0f14;
-    --card: #161a23;
-    --border: #252b38;
-    --accent: #f0c040;
-    --accent2: #3ecfcf;
-    --correct: #2dca73;
-    --wrong: #e84a5f;
-    --text: #e8eaf0;
-    --muted: #6b7280;
-    --radius: 12px;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    padding: 0;
-  }
-
-  /* TOP BAR */
-  #topbar {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: rgba(13,15,20,0.95);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 28px;
-    gap: 20px;
-  }
-  #topbar h1 {
-    font-family: 'Syne', sans-serif;
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--accent);
-    letter-spacing: 0.04em;
-    white-space: nowrap;
-  }
-  .bar-stats {
-    display: flex;
-    gap: 24px;
-    align-items: center;
-  }
-  .stat-box {
-    text-align: center;
-  }
-  .stat-label {
-    font-size: 0.65rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-  .stat-value {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.2rem;
-    font-weight: 700;
-  }
-  #score-val { color: var(--accent2); }
-  #pct-val { color: var(--accent); }
-  #timer-val {
-    color: var(--text);
-    font-variant-numeric: tabular-nums;
-    transition: color 0.3s;
-  }
-  #timer-val.urgent { color: var(--wrong); animation: pulse 1s infinite; }
-
-  @keyframes pulse {
-    0%,100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
-
-  /* PROGRESS BAR */
-  #progress-wrap {
-    height: 3px;
-    background: var(--border);
-    position: sticky;
-    top: 61px;
-    z-index: 99;
-  }
-  #progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent2), var(--accent));
-    width: 0%;
-    transition: width 0.4s ease;
-  }
-
-  /* MAIN */
-  #main {
-    max-width: 820px;
-    margin: 0 auto;
-    padding: 32px 20px 80px;
-  }
-
-  .section-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--accent2);
-    margin: 36px 0 18px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  /* QUESTION CARD */
-  .q-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 22px 24px;
-    margin-bottom: 14px;
-    transition: border-color 0.2s;
-  }
-  .q-card.answered { border-color: #2a3040; }
-
-  .q-num {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-  .q-text {
-    font-size: 0.97rem;
-    line-height: 1.6;
-    color: var(--text);
-    margin-bottom: 16px;
-  }
-
-  /* OPTIONS */
-  .options {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-  @media (max-width: 520px) {
-    .options { grid-template-columns: 1fr; }
-  }
-
-  .opt-btn {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: transparent;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    cursor: pointer;
-    text-align: left;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.9rem;
-    transition: border-color 0.15s, background 0.15s, transform 0.1s;
-    position: relative;
-    overflow: hidden;
-  }
-  .opt-btn:not(.locked):hover {
-    border-color: var(--accent2);
-    background: rgba(62,207,207,0.06);
-    transform: translateY(-1px);
-  }
-  .opt-btn .opt-letter {
-    min-width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.72rem;
-    font-weight: 700;
-    font-family: 'Syne', sans-serif;
-    color: var(--muted);
-    transition: background 0.15s, color 0.15s;
-  }
-  .opt-btn .opt-text { flex: 1; line-height: 1.4; }
-
-  /* LOCKED states */
-  .opt-btn.locked { cursor: not-allowed; }
-  .opt-btn.selected-correct {
-    border-color: var(--correct);
-    background: rgba(45,202,115,0.1);
-  }
-  .opt-btn.selected-correct .opt-letter {
-    background: var(--correct);
-    color: #0d0f14;
-  }
-  .opt-btn.selected-wrong {
-    border-color: var(--wrong);
-    background: rgba(232,74,95,0.1);
-  }
-  .opt-btn.selected-wrong .opt-letter {
-    background: var(--wrong);
-    color: #fff;
-  }
-  .opt-btn.show-correct {
-    border-color: var(--correct);
-    background: rgba(45,202,115,0.06);
-  }
-  .opt-btn.show-correct .opt-letter {
-    background: var(--correct);
-    color: #0d0f14;
-  }
-
-  /* RESULT SCREEN */
-  #result-screen {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 80vh;
-    text-align: center;
-    padding: 40px 20px;
-  }
-  #result-screen.visible { display: flex; }
-  #main.hidden { display: none; }
-
-  .result-circle {
-    width: 160px;
-    height: 160px;
-    border-radius: 50%;
-    background: conic-gradient(var(--accent) 0%, transparent 0%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 28px;
-    position: relative;
-  }
-  .result-circle::before {
-    content: '';
-    position: absolute;
-    inset: 10px;
-    border-radius: 50%;
-    background: var(--bg);
-  }
-  .result-pct-text {
-    position: relative;
-    z-index: 1;
-    font-family: 'Syne', sans-serif;
-    font-size: 2.4rem;
-    font-weight: 800;
-    color: var(--accent);
-  }
-  .result-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.8rem;
-    font-weight: 800;
-    margin-bottom: 8px;
-  }
-  .result-sub {
-    font-size: 1rem;
-    color: var(--muted);
-    margin-bottom: 32px;
-  }
-  .result-grade {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 700;
-    padding: 10px 28px;
-    border-radius: 50px;
-    margin-bottom: 28px;
-  }
-  .result-stats {
-    display: flex;
-    gap: 28px;
-    margin-bottom: 36px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .rs-box {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px 24px;
-    min-width: 110px;
-  }
-  .rs-val {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.6rem;
-    font-weight: 800;
-  }
-  .rs-lbl { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
-
-  .retry-btn {
-    background: var(--accent);
-    color: #0d0f14;
-    border: none;
-    border-radius: 8px;
-    padding: 13px 36px;
-    font-family: 'Syne', sans-serif;
-    font-size: 0.95rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.2s, transform 0.15s;
-  }
-  .retry-btn:hover { opacity: 0.85; transform: translateY(-1px); }
-
-  /* SUBMIT */
-  #submit-wrap {
-    text-align: center;
-    margin-top: 36px;
-  }
-  #submit-btn {
-    background: var(--accent);
-    color: #0d0f14;
-    border: none;
-    border-radius: 8px;
-    padding: 14px 48px;
-    font-family: 'Syne', sans-serif;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.2s, transform 0.15s;
-    letter-spacing: 0.04em;
-  }
-  #submit-btn:hover { opacity: 0.85; transform: translateY(-2px); }
-  #submit-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-  .answered-indicator {
-    font-size: 0.75rem;
-    color: var(--muted);
-    margin-top: 10px;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hub Beyond Numbers | Obsidian Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;0,700;1,400&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0b;
+            --surface: rgba(18, 18, 20, 0.98);
+            --card-bg: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+            --accent: #d4af37;
+            --accent-soft: rgba(212,175,55,0.15);
+            --text: #f8f8f8;
+            --text-dim: #a0a0a5;
+            --border: rgba(255,255,255,0.08);
+            --font-serif: 'Cormorant Garamond', serif;
+            --font-sans: 'Inter', sans-serif;
+            --transition: all 0.5s cubic-bezier(0.2,1,0.2,1);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+        body { background-color: var(--bg); color: var(--text); font-family: var(--font-sans); min-height: 100vh; overflow-x: hidden; }
+        .ambient { position: fixed; top:0; left:0; width:100%; height:100%; background: radial-gradient(circle at 50% -20%, #1a1a1e 0%, transparent 50%); z-index:-1; }
+        .sidebar { width:300px; background:var(--surface); backdrop-filter:blur(40px); border-right:1px solid var(--border); height:100vh; position:fixed; left:0; top:0; padding:4rem 2rem; display:flex; flex-direction:column; z-index:100; transition:var(--transition); }
+        @media (max-width:1024px) { .sidebar { transform:translateX(-100%); } .sidebar.open { transform:translateX(0); box-shadow:20px 0 100px rgba(0,0,0,0.9); } }
+        .logo { font-family:var(--font-serif); font-size:2.2rem; font-weight:300; margin-bottom:5rem; letter-spacing:-1px; color:var(--text); }
+        .logo b { font-weight:700; color:var(--accent); }
+        .logo span { display:block; font-size:0.7rem; letter-spacing:5px; text-transform:uppercase; font-family:var(--font-sans); margin-top:8px; color:var(--text-dim); }
+        .nav-item { padding:16px 24px; border-radius:12px; cursor:pointer; color:var(--text-dim); margin-bottom:8px; transition:var(--transition); font-size:1rem; display:flex; align-items:center; gap:15px; }
+        .nav-item:hover { color:var(--text); background:rgba(255,255,255,0.03); }
+        .nav-item.active { background:var(--accent-soft); color:var(--accent); font-weight:600; }
+        .viewport { padding:6rem 10% 8rem; margin-left:300px; transition:var(--transition); }
+        @media (max-width:1024px) { .viewport { margin-left:0; padding:5rem 6% 6rem; } }
+        .heading-group h1 { font-family:var(--font-serif); font-size:clamp(3.5rem,8vw,7rem); font-weight:300; font-style:italic; margin-bottom:0.5rem; line-height:0.8; letter-spacing:-2px; }
+        .tabs { display:flex; gap:30px; margin:3rem 0; border-bottom:1px solid var(--border); padding-bottom:1rem; }
+        .tab { cursor:pointer; color:var(--text-dim); font-size:0.9rem; text-transform:uppercase; letter-spacing:2px; transition:var(--transition); position:relative; }
+        .tab.active { color:var(--accent); font-weight:800; }
+        .tab.active::after { content:''; position:absolute; bottom:-1rem; left:0; width:100%; height:2px; background:var(--accent); }
+        .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:3rem; }
+        .card { background:var(--card-bg); border:1px solid var(--border); border-radius:2px; padding:4rem 3rem; transition:var(--transition); cursor:pointer; position:relative; overflow:hidden; }
+        .card::before { content:''; position:absolute; top:0; left:0; width:100%; height:1px; background:linear-gradient(90deg,transparent,var(--accent),transparent); transform:translateX(-100%); transition:0.6s; }
+        .card:hover { border-color:var(--accent); transform:translateY(-5px); }
+        .card:hover::before { transform:translateX(100%); }
+        .card h3 { font-family:var(--font-serif); font-size:4rem; font-weight:300; margin-bottom:1rem; }
+        .card .btn-label { font-size:0.7rem; letter-spacing:3px; text-transform:uppercase; color:var(--accent); font-weight:800; }
+        .mobile-header { display:none; position:fixed; top:0; left:0; width:100%; background:var(--bg); padding:1.5rem 2rem; z-index:110; border-bottom:1px solid var(--border); justify-content:space-between; align-items:center; }
+        @media (max-width:1024px) { .mobile-header { display:flex; } }
+        #quiz-overlay { position:fixed; inset:0; background:var(--bg); z-index:2000; display:none; flex-direction:column; overflow-y:auto; }
+        .quiz-top { padding:2rem 5%; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:var(--surface); position:sticky; top:0; z-index:10; flex-wrap:wrap; gap:1rem; }
+        .progress-bar { width:200px; height:2px; background:var(--border); border-radius:2px; margin-top:8px; }
+        .progress-fill { height:100%; background:var(--accent); border-radius:2px; transition:width 0.4s ease; }
+        .quiz-container { max-width:900px; margin:4rem auto; padding:0 2rem; }
+        .question-box { margin-bottom:5rem; }
+        .q-num { font-family:var(--font-serif); font-size:1.5rem; color:var(--accent); margin-bottom:0.5rem; display:block; }
+        .q-badge { display:inline-block; font-size:0.6rem; letter-spacing:2px; text-transform:uppercase; background:var(--accent-soft); color:var(--accent); padding:3px 10px; border-radius:2px; margin-bottom:1.2rem; }
+        .q-text { font-family:var(--font-serif); font-size:2rem; line-height:1.3; margin-bottom:2.5rem; font-weight:400; }
+        .options-list { display:grid; gap:12px; }
+        .option-btn { background:transparent; border:1px solid var(--border); padding:18px 28px; text-align:left; color:var(--text); font-family:var(--font-sans); font-size:1rem; cursor:pointer; transition:var(--transition); display:flex; align-items:center; gap:15px; border-radius:4px; }
+        .option-btn:hover:not(:disabled) { border-color:var(--accent); background:var(--accent-soft); }
+        .option-btn.selected { background:var(--accent-soft); border-color:var(--accent); }
+        .option-btn.correct { background:rgba(52,199,89,0.15); border-color:#34c759; }
+        .option-btn.correct .opt-letter { color:#34c759; }
+        .option-btn.wrong { background:rgba(255,59,48,0.15); border-color:#ff3b30; }
+        .option-btn.wrong .opt-letter { color:#ff3b30; }
+        .option-btn:disabled { cursor:default; }
+        .opt-letter { font-weight:800; color:var(--accent); min-width:24px; font-size:0.9rem; letter-spacing:1px; }
+        .btn-confirm { display:none; margin-top:1.5rem; background:var(--accent); border:none; color:#000; padding:12px 32px; font-size:0.75rem; letter-spacing:2px; cursor:pointer; text-transform:uppercase; font-weight:800; border-radius:2px; }
+        .close-quiz { background:transparent; border:1px solid var(--accent); color:var(--accent); padding:10px 30px; font-size:0.8rem; letter-spacing:2px; cursor:pointer; text-transform:uppercase; }
+        .score-panel { display:none; max-width:700px; margin:6rem auto 4rem; padding:4rem; border:1px solid var(--border); text-align:center; }
+        .score-panel .big-score { font-family:var(--font-serif); font-size:6rem; color:var(--accent); font-weight:300; line-height:1; }
+        .score-panel .score-msg { color:var(--text-dim); margin-top:1rem; letter-spacing:2px; font-size:0.8rem; text-transform:uppercase; }
+        .score-breakdown { display:grid; grid-template-columns:1fr 1fr 1fr; gap:2rem; margin:3rem 0; }
+        .score-stat { border:1px solid var(--border); padding:2rem 1rem; }
+        .score-stat .val { font-family:var(--font-serif); font-size:3rem; font-weight:300; }
+        .score-stat .lbl { font-size:0.65rem; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); margin-top:0.5rem; }
+        .score-stat.good .val { color:#34c759; }
+        .score-stat.bad .val { color:#ff3b30; }
+        .mask { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:90; }
+        .mask.active { display:block; }
+    </style>
 </head>
 <body>
-
-<!-- TOP BAR -->
-<div id="topbar">
-  <h1>📐 Basic 8 Mathematics</h1>
-  <div class="bar-stats">
-    <div class="stat-box">
-      <div class="stat-label">Score</div>
-      <div class="stat-value" id="score-val">0 / 60</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">Percentage</div>
-      <div class="stat-value" id="pct-val">0%</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">Time Left</div>
-      <div class="stat-value" id="timer-val">60:00</div>
-    </div>
-  </div>
+<div class="ambient"></div>
+<div class="mask" id="mask" onclick="toggleMenu()"></div>
+<div class="mobile-header">
+    <div class="logo" style="margin:0;font-size:1.5rem;">Hub <b>Beyond</b></div>
+    <button style="background:none;border:none;color:#fff;font-size:1.5rem;" onclick="toggleMenu()">MENU</button>
 </div>
-<div id="progress-wrap"><div id="progress-bar"></div></div>
-
-<!-- QUIZ MAIN -->
-<div id="main">
-  <div id="questions-container"></div>
-  <div id="submit-wrap">
-    <button id="submit-btn" onclick="submitQuiz()">Submit Quiz</button>
-    <div class="answered-indicator" id="answered-count">0 of 60 answered</div>
-  </div>
+<aside class="sidebar" id="sidebar">
+    <div class="logo">Hub <b>Beyond</b><span>Numbers</span></div>
+    <nav id="grade-nav"></nav>
+</aside>
+<main class="viewport">
+    <div class="heading-group">
+        <p style="color:var(--accent);letter-spacing:5px;font-size:0.7rem;font-weight:800;text-transform:uppercase;margin-bottom:1rem;">Official Question Bank</p>
+        <h1 id="view-title">Basic 5</h1>
+    </div>
+    <div class="tabs">
+        <div class="tab active" onclick="setTrial(1,this)">Trial I</div>
+        <div class="tab" onclick="setTrial(2,this)">Trial II</div>
+        <div class="tab" onclick="setTrial(3,this)">Trial III</div>
+    </div>
+    <div class="grid" id="card-grid"></div>
+</main>
+<div id="quiz-overlay">
+    <div class="quiz-top">
+        <div>
+            <h2 id="quiz-title" style="font-family:var(--font-serif);font-size:2rem;">Assessment</h2>
+            <p id="quiz-meta" style="font-size:0.7rem;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;"></p>
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+            <div id="live-score-box" style="text-align:center;display:none;">
+                <div id="live-pct" style="font-family:var(--font-serif);font-size:2.8rem;font-weight:300;line-height:1;color:var(--accent);">0%</div>
+                <div style="font-size:0.6rem;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-top:4px;">Live Score</div>
+                <div id="live-fraction" style="font-size:0.7rem;color:var(--text-dim);margin-top:2px;">0 / 0</div>
+            </div>
+            <button class="close-quiz" onclick="closeQuiz()">End Session</button>
+        </div>
+    </div>
+    <div class="quiz-container" id="quiz-content"></div>
+    <div class="score-panel" id="score-panel">
+        <p style="color:var(--accent);letter-spacing:5px;font-size:0.7rem;font-weight:800;margin-bottom:1.5rem;">SESSION RESULTS</p>
+        <div class="big-score" id="score-val">0/40</div>
+        <p class="score-msg" id="score-msg">Complete</p>
+        <div class="score-breakdown">
+            <div class="score-stat good"><div class="val" id="stat-correct">0</div><div class="lbl">Correct</div></div>
+            <div class="score-stat bad"><div class="val" id="stat-wrong">0</div><div class="lbl">Incorrect</div></div>
+            <div class="score-stat"><div class="val" id="stat-pct">0%</div><div class="lbl">Score</div></div>
+        </div>
+        <button class="close-quiz" onclick="closeQuiz()">Close Session</button>
+    </div>
 </div>
-
-<!-- RESULT SCREEN -->
-<div id="result-screen">
-  <div class="result-circle" id="result-circle">
-    <div class="result-pct-text" id="result-pct">0%</div>
-  </div>
-  <div class="result-title" id="result-title">Quiz Complete!</div>
-  <div class="result-sub" id="result-sub">Here's how you did</div>
-  <div class="result-grade" id="result-grade"></div>
-  <div class="result-stats">
-    <div class="rs-box"><div class="rs-val" id="rs-correct" style="color:var(--correct)">0</div><div class="rs-lbl">Correct</div></div>
-    <div class="rs-box"><div class="rs-val" id="rs-wrong" style="color:var(--wrong)">0</div><div class="rs-lbl">Wrong</div></div>
-    <div class="rs-box"><div class="rs-val" id="rs-skipped" style="color:var(--muted)">0</div><div class="rs-lbl">Skipped</div></div>
-    <div class="rs-box"><div class="rs-val" id="rs-time" style="color:var(--accent2)">-</div><div class="rs-lbl">Time Used</div></div>
-  </div>
-  <button class="retry-btn" onclick="retryQuiz()">🔁 Try Again</button>
-</div>
-
 <script>
-const QUESTIONS = [
-  // ── SECTION A (original 40 with changed values) ──
-  {
-    q: "Which of the following is equivalent to 3/4?",
-    opts: ["A. 6/10", "B. 9/12", "C. 5/8", "D. 10/16"],
-    ans: "B"
+const questionBank = {
+  basic5: {
+    1: [
+      // NUMBERS (10) — Trial 1 focuses on: multiplication patterns, skip counting, basic integer addition, ordering
+      {q:"If 8 × 4 = 32, what is 8 × 5?", opts:["36","40","42","44"], ans:1, topic:"Numbers"},
+      {q:"Use the 11s pattern to solve 11 × 6.", opts:["55","60","66","77"], ans:2, topic:"Numbers"},
+      {q:"Use doubling to solve 4 × 7.", opts:["14","21","28","35"], ans:2, topic:"Numbers"},
+      {q:"What is the next number in: 7, 14, 21, ___?", opts:["27","28","29","30"], ans:1, topic:"Numbers"},
+      {q:"A diver is 5 m below sea level (−5) and sinks 3 more metres. Where is he now?", opts:["−2 m","−8 m","8 m","2 m"], ans:1, topic:"Numbers"},
+      {q:"Calculate −8 + 2.", opts:["−10","10","−6","6"], ans:2, topic:"Numbers"},
+      {q:"Which is the largest integer: −10, −1, 0, 5?", opts:["−10","−1","0","5"], ans:3, topic:"Numbers"},
+      {q:"What is 98 × 7?", opts:["676","686","696","706"], ans:1, topic:"Numbers"},
+      {q:"What are the first three multiples of 9?", opts:["9, 18, 27","9, 19, 29","3, 6, 9","18, 27, 36"], ans:0, topic:"Numbers"},
+      {q:"On a number line, what is 10 + (−4)?", opts:["14","6","−6","−14"], ans:1, topic:"Numbers"},
+      // ALGEBRA (10) — Trial 1: translating words, basic simplification, substitution, perimeter formula
+      {q:"Write \"Sum of 12 and k\" as an algebraic expression.", opts:["12k","k − 12","12 + k","k ÷ 12"], ans:2, topic:"Algebra"},
+      {q:"Translate \"7 times g\" into algebra.", opts:["7 + g","7g","g − 7","7 ÷ g"], ans:1, topic:"Algebra"},
+      {q:"Simplify: m + 5m + m.", opts:["6m","7m","5m","7"], ans:1, topic:"Algebra"},
+      {q:"Simplify: 10x − 4x.", opts:["14x","6","6x","4x"], ans:2, topic:"Algebra"},
+      {q:"Evaluate b + 15 when b = 5.", opts:["10","20","155","75"], ans:1, topic:"Algebra"},
+      {q:"What is the perimeter formula for a rectangle with length L and width W?", opts:["L + W","L × W","2(L + W)","L − W"], ans:2, topic:"Algebra"},
+      {q:"Group like terms: 5 + 2a − 1 + 3a.", opts:["5a + b","6a − 1","4 + 5a","9a"], ans:2, topic:"Algebra"},
+      {q:"If y = 6, find y ÷ 2 + 3.", opts:["4","5","6","8"], ans:2, topic:"Algebra"},
+      {q:"A shape has sides 3a, 2a, and a. Write its perimeter as an expression.", opts:["6a","5a","4a + a","3a × 2a"], ans:0, topic:"Algebra"},
+      {q:"Simplify: 4p + 3 − p + 7.", opts:["3p + 10","5p + 10","4p + 10","3p + 4"], ans:0, topic:"Algebra"},
+      // MEASUREMENT (10) — Trial 1: perimeter of shapes, edges/faces of 3D shapes, volume units, area of rectangle, volume of cube
+      {q:"What is the perimeter of an equilateral triangle with sides of 5 cm each?", opts:["10 cm","15 cm","25 cm","20 cm"], ans:1, topic:"Measurement"},
+      {q:"A square has a side of 4 cm. What is its perimeter?", opts:["8 cm","12 cm","16 cm","20 cm"], ans:2, topic:"Measurement"},
+      {q:"How many edges does a standard 3D cube have?", opts:["6","8","10","12"], ans:3, topic:"Measurement"},
+      {q:"Volume is measured in which units?", opts:["cm","cm²","cm³","kg"], ans:2, topic:"Measurement"},
+      {q:"If you have 24 unit cubes, which box dimensions hold them exactly?", opts:["2×2×2","4×3×2","5×4×1","10×2×1"], ans:1, topic:"Measurement"},
+      {q:"A container of 1000 cm³ holds how many litres?", opts:["10 L","5 L","1 L","0.5 L"], ans:2, topic:"Measurement"},
+      {q:"A box made of exactly 20 unit cubes could have which dimensions?", opts:["4×5×1","3×3×3","2×2×4","6×4×1"], ans:0, topic:"Measurement"},
+      {q:"A rectangle is 8 cm long and 3 cm wide. What is its perimeter?", opts:["22 cm","24 cm","11 cm","22 cm²"], ans:0, topic:"Measurement"},
+      {q:"A rectangle is 6 cm long and 4 cm wide. What is its area?", opts:["20 cm²","24 cm²","10 cm","24 cm"], ans:1, topic:"Measurement"},
+      {q:"A cube has edges of 3 cm each. What is its volume?", opts:["9 cm³","18 cm³","27 cm³","12 cm³"], ans:2, topic:"Measurement"},
+      // CHANCE (10) — Trial 1: impossible/certain/possible/unlikely vocabulary, basic language questions
+      {q:"In a Ludo game, the chance of rolling a \"7\" on one die is:", opts:["Possible","Likely","Certain","Impossible"], ans:3, topic:"Chance"},
+      {q:"Picking a green ball from a bag of ONLY green balls is:", opts:["Impossible","Possible","Certain","Unlikely"], ans:2, topic:"Chance"},
+      {q:"A bag has 10 Red and 1 Pink bottle top. Picking Pink is:", opts:["Likely","Unlikely","Certain","Impossible"], ans:1, topic:"Chance"},
+      {q:"Tossing a coin and getting Tails is:", opts:["Certain","Impossible","Possible","Unlikely"], ans:2, topic:"Chance"},
+      {q:"If it is sunny today, it is ________ that it will be sunny tomorrow.", opts:["Possible","Impossible","Certain","Zero"], ans:0, topic:"Chance"},
+      {q:"Probability is the study of:", opts:["Weight","Chance","Length","Volume"], ans:1, topic:"Chance"},
+      {q:"A \"Certain\" event has a probability of:", opts:["0%","50%","75%","100%"], ans:3, topic:"Chance"},
+      {q:"In a bag of 5 Blue and 5 Red marbles, picking a Blue marble is:", opts:["Likely","Unlikely","Equally Likely","Impossible"], ans:2, topic:"Chance"},
+      {q:"You toss a coin 20 times and get 13 heads. What is the THEORETICAL probability of Heads?", opts:["1 out of 4","1 out of 3","1 out of 2","2 out of 3"], ans:2, topic:"Chance"},
+      {q:"Which is an example of an IMPOSSIBLE event?", opts:["Rolling a 3 on a die","The sun rising tomorrow","A cat flying unaided","Picking any ball from a full bag"], ans:2, topic:"Chance"}
+    ],
+    2: [
+      // NUMBERS (10) — Trial 2 focuses on: different multiplication facts, negative × scenarios, ordering integers, multiples of 7
+      {q:"What is 4 × 9?", opts:["27","32","36","40"], ans:2, topic:"Numbers"},
+      {q:"Use the 11s pattern to find 11 × 9.", opts:["90","99","98","100"], ans:1, topic:"Numbers"},
+      {q:"Use doubling to solve 6 × 8.", opts:["42","46","48","54"], ans:2, topic:"Numbers"},
+      {q:"What is the next number in: 5, 10, 15, ___?", opts:["18","19","20","25"], ans:2, topic:"Numbers"},
+      {q:"A submarine is at −12 m and rises 5 m. What is its new position?", opts:["−17 m","17 m","−7 m","7 m"], ans:2, topic:"Numbers"},
+      {q:"Calculate −3 + (−5).", opts:["2","−2","−8","8"], ans:2, topic:"Numbers"},
+      {q:"Order from smallest to largest: −5, 4, −2, 0.", opts:["0, −2, −5, 4","4, 0, −2, −5","−5, −2, 0, 4","−2, −5, 0, 4"], ans:2, topic:"Numbers"},
+      {q:"What is 63 × 4?", opts:["212","242","252","262"], ans:2, topic:"Numbers"},
+      {q:"What is the 4th multiple of 7?", opts:["21","28","35","14"], ans:1, topic:"Numbers"},
+      {q:"On a number line, what is −7 + 10?", opts:["−17","−3","3","17"], ans:2, topic:"Numbers"},
+      // ALGEBRA (10) — Trial 2: different expressions, subtraction/division phrases, different variables and values
+      {q:"Write \"3 less than p\" as an expression.", opts:["3 − p","p − 3","3p","p + 3"], ans:1, topic:"Algebra"},
+      {q:"Translate \"twice the number n\" into algebra.", opts:["n + 2","2 + n","2n","n²"], ans:2, topic:"Algebra"},
+      {q:"Simplify: 3a + 2a + a.", opts:["5a","6a","7a","3a"], ans:1, topic:"Algebra"},
+      {q:"Simplify: 8y − 3y + y.", opts:["6y","4y","5y","12y"], ans:0, topic:"Algebra"},
+      {q:"Evaluate 3x + 4 when x = 2.", opts:["10","8","12","14"], ans:0, topic:"Algebra"},
+      {q:"A square has side s. What is its perimeter formula?", opts:["s²","2s","4s","s + 4"], ans:2, topic:"Algebra"},
+      {q:"Collect like terms: 2b + 4 + 5b − 2.", opts:["7b + 2","7b − 2","2b + 7","6b + 2"], ans:0, topic:"Algebra"},
+      {q:"If t = 3, what is 5t − 4?", opts:["11","15","19","9"], ans:0, topic:"Algebra"},
+      {q:"Which expression means \"divide k by 4\"?", opts:["4k","k + 4","k − 4","k ÷ 4"], ans:3, topic:"Algebra"},
+      {q:"Simplify: 6m − m + 2m.", opts:["9m","7m","5m","8m"], ans:1, topic:"Algebra"},
+      // MEASUREMENT (10) — Trial 2: pentagon perimeter, faces/vertices, area of square, different volume box, litres conversion, triangle perimeter
+      {q:"A regular pentagon has sides of 6 cm. What is its perimeter?", opts:["24 cm","30 cm","36 cm","12 cm"], ans:1, topic:"Measurement"},
+      {q:"How many faces does a cube have?", opts:["4","6","8","12"], ans:1, topic:"Measurement"},
+      {q:"What is the area of a square with side 5 cm?", opts:["10 cm²","20 cm²","25 cm²","15 cm²"], ans:2, topic:"Measurement"},
+      {q:"A box measures 2 cm × 3 cm × 4 cm. What is its volume?", opts:["9 cm³","18 cm³","24 cm³","14 cm³"], ans:2, topic:"Measurement"},
+      {q:"Which unit is used to measure area?", opts:["cm","cm²","cm³","m"], ans:1, topic:"Measurement"},
+      {q:"A rectangle is 10 cm long and 5 cm wide. What is its area?", opts:["50 cm","30 cm","50 cm²","15 cm²"], ans:2, topic:"Measurement"},
+      {q:"How many vertices does a cube have?", opts:["6","8","10","12"], ans:1, topic:"Measurement"},
+      {q:"A box holds 36 unit cubes. Which dimensions are correct?", opts:["4×4×2","3×3×4","6×6×1","2×2×8"], ans:1, topic:"Measurement"},
+      {q:"A triangle has sides 7 cm, 9 cm, and 5 cm. What is its perimeter?", opts:["20 cm","21 cm","22 cm","19 cm"], ans:1, topic:"Measurement"},
+      {q:"2000 cm³ equals how many litres?", opts:["1 L","2 L","20 L","0.2 L"], ans:1, topic:"Measurement"},
+      // CHANCE (10) — Trial 2: applying probability to new scenarios, card deck, loaded die, experimental vs theoretical
+      {q:"Picking a red card from a standard deck is:", opts:["Impossible","Certain","Possible","Unlikely"], ans:2, topic:"Chance"},
+      {q:"Rolling a number less than 7 on a standard die is:", opts:["Impossible","Unlikely","Possible","Certain"], ans:3, topic:"Chance"},
+      {q:"A bag has ONLY blue balls. Picking a red ball is:", opts:["Likely","Possible","Certain","Impossible"], ans:3, topic:"Chance"},
+      {q:"What is the probability of an impossible event?", opts:["1","0.5","0","100%"], ans:2, topic:"Chance"},
+      {q:"In a bag of 8 Yellow and 2 Blue tops, picking Yellow is:", opts:["Unlikely","Equally Likely","Likely","Certain"], ans:2, topic:"Chance"},
+      {q:"A fair coin shows either Heads or Tails. This covers:", opts:["Only one outcome","All possible outcomes","No outcomes","Three outcomes"], ans:1, topic:"Chance"},
+      {q:"You flip a coin 10 times. How many Tails would you THEORETICALLY expect?", opts:["2","3","5","8"], ans:2, topic:"Chance"},
+      {q:"Which word best describes an event that WILL NEVER happen?", opts:["Likely","Certain","Possible","Impossible"], ans:3, topic:"Chance"},
+      {q:"A bag has 3 green, 3 yellow, and 3 red balls. Picking yellow is:", opts:["Impossible","Unlikely","Possible","Certain"], ans:2, topic:"Chance"},
+      {q:"If you kept rolling a die thousands of times, the chance of getting a 6 each roll is:", opts:["More likely each time","Always 1 out of 6","Less likely over time","Certain after 6 rolls"], ans:1, topic:"Chance"}
+    ],
+    3: [
+      // NUMBERS (10) — Trial 3: different multiplications (9×9, 12×11, 56×4), temperature context, sum of multiples, zero sum
+      {q:"What is 9 × 9?", opts:["72","81","84","90"], ans:1, topic:"Numbers"},
+      {q:"Use the 11s pattern to find 11 × 12.", opts:["122","132","142","112"], ans:1, topic:"Numbers"},
+      {q:"Use doubling to solve 3 × 12.", opts:["30","32","36","42"], ans:2, topic:"Numbers"},
+      {q:"What is the next number in: 9, 18, 27, ___?", opts:["34","35","36","37"], ans:2, topic:"Numbers"},
+      {q:"A temperature drops from 3°C to −5°C. By how many degrees did it fall?", opts:["2","8","−8","−2"], ans:1, topic:"Numbers"},
+      {q:"Calculate −4 + 9.", opts:["−5","5","13","−13"], ans:1, topic:"Numbers"},
+      {q:"What integer is halfway between −4 and 4 on a number line?", opts:["1","−1","0","2"], ans:2, topic:"Numbers"},
+      {q:"What is the sum of the first 5 multiples of 3?", opts:["30","45","15","35"], ans:1, topic:"Numbers"},
+      {q:"What is 56 × 4?", opts:["204","214","224","234"], ans:2, topic:"Numbers"},
+      {q:"What is −10 + 10?", opts:["20","−20","10","0"], ans:3, topic:"Numbers"},
+      // ALGEBRA (10) — Trial 3: product phrases, coefficient concept, two-variable substitution, expanding brackets, identifying like terms
+      {q:"Write \"the product of 5 and w\" as an expression.", opts:["5 + w","w − 5","5w","5 ÷ w"], ans:2, topic:"Algebra"},
+      {q:"In the term 4x, what is the coefficient?", opts:["The letter x","The number 4","The + sign","Both 4 and x"], ans:1, topic:"Algebra"},
+      {q:"Simplify: 9c − 4c + 2c.", opts:["7c","5c","8c","15c"], ans:0, topic:"Algebra"},
+      {q:"Evaluate 2a + 3b when a = 4 and b = 2.", opts:["10","12","14","16"], ans:2, topic:"Algebra"},
+      {q:"A rectangle has sides (x + 2) cm and x cm. Its perimeter is:", opts:["4x + 2","4x + 4","2x + 4","x² + 2x"], ans:1, topic:"Algebra"},
+      {q:"Simplify: 5 + 3z − 3 + z.", opts:["4z + 2","4z − 2","2 + 4z","8z − 2"], ans:2, topic:"Algebra"},
+      {q:"If f = 10, find f ÷ 5 + 3.", opts:["4","5","6","8"], ans:1, topic:"Algebra"},
+      {q:"Which of these is a like term to 7n?", opts:["7","n²","3n","7m"], ans:2, topic:"Algebra"},
+      {q:"Translate \"8 more than a number h\" into algebra.", opts:["h − 8","8h","h + 8","8 ÷ h"], ans:2, topic:"Algebra"},
+      {q:"What is the value of 3x − 1 when x = 4?", opts:["8","9","11","13"], ans:2, topic:"Algebra"},
+      // MEASUREMENT (10) — Trial 3: hexagon perimeter, cuboid faces, larger square area, different volume, octagon side length, triangle area
+      {q:"A regular hexagon has sides of 4 cm. What is its perimeter?", opts:["20 cm","24 cm","28 cm","32 cm"], ans:1, topic:"Measurement"},
+      {q:"What is the volume of a box 5 cm × 2 cm × 3 cm?", opts:["25 cm³","30 cm³","20 cm³","10 cm³"], ans:1, topic:"Measurement"},
+      {q:"How many faces does a rectangular prism (cuboid) have?", opts:["4","6","8","5"], ans:1, topic:"Measurement"},
+      {q:"A square room has a side of 7 m. What is its area?", opts:["28 m²","42 m²","49 m²","14 m²"], ans:2, topic:"Measurement"},
+      {q:"What is the perimeter of a rectangle 12 cm by 5 cm?", opts:["34 cm","30 cm","60 cm","17 cm"], ans:0, topic:"Measurement"},
+      {q:"A fish tank holds 3000 cm³ of water. How many litres is that?", opts:["3 L","30 L","0.3 L","300 L"], ans:0, topic:"Measurement"},
+      {q:"Which 3D shape has all faces as squares?", opts:["Cuboid","Cylinder","Cube","Pyramid"], ans:2, topic:"Measurement"},
+      {q:"A box uses 48 unit cubes. Which dimensions fit?", opts:["4×3×4","5×5×2","4×4×4","6×8×1"], ans:0, topic:"Measurement"},
+      {q:"A triangle has base 10 cm and height 4 cm. What is its area?", opts:["40 cm²","20 cm²","14 cm²","10 cm²"], ans:1, topic:"Measurement"},
+      {q:"A regular octagon has perimeter 36 cm. How long is each side?", opts:["4 cm","4.5 cm","6 cm","9 cm"], ans:1, topic:"Measurement"},
+      // CHANCE (10) — Trial 3: probability vocabulary applied to real-life, experimental result reading, fraction probability, certain events
+      {q:"What does the word \"probability\" help us measure?", opts:["Distance","The chance of an event happening","Weight","Speed"], ans:1, topic:"Chance"},
+      {q:"The chance of drawing a month starting with 'J' from all 12 months written on cards is:", opts:["Impossible","Unlikely","Possible","Certain"], ans:2, topic:"Chance"},
+      {q:"A bag has 12 Yellow, 2 Blue, 0 Green tops. The chance of picking Green is:", opts:["Likely","Unlikely","Certain","Impossible"], ans:3, topic:"Chance"},
+      {q:"With 12 Yellow and 2 Blue tops, picking Yellow is:", opts:["Unlikely","Equally Likely","Likely","Impossible"], ans:2, topic:"Chance"},
+      {q:"Which situation gives an equally likely outcome?", opts:["Bag with 5 blue balls only","Flipping a fair coin","A die loaded to always land on 6","Picking 1 from 100 red marbles"], ans:1, topic:"Chance"},
+      {q:"You flip a coin 20 times and get 13 heads. What was the EXPERIMENTAL result for heads?", opts:["10","13","7","20"], ans:1, topic:"Chance"},
+      {q:"A bag has 3 red and 3 blue balls. What is the theoretical probability of picking red?", opts:["1/6","1/3","1/2","2/3"], ans:2, topic:"Chance"},
+      {q:"Which event is CERTAIN to happen?", opts:["Rolling a 7 on a die","The sun rising tomorrow","Picking black from a white-only bag","Getting both heads and tails on one coin flip"], ans:1, topic:"Chance"},
+      {q:"An event with 0% probability is described as:", opts:["Unlikely","Possible","Certain","Impossible"], ans:3, topic:"Chance"},
+      {q:"Which is an example of a POSSIBLE event?", opts:["A dog speaking English","Rolling a 4 on a die","The moon turning green permanently","2 + 2 equalling 5"], ans:1, topic:"Chance"}
+    ]
   },
-  {
-    q: "Express 17/5 as a mixed number.",
-    opts: ["A. 3 1/5", "B. 2 3/5", "C. 3 2/5", "D. 4 1/5"],
-    ans: "C"
-  },
-  {
-    q: "Simplify: 24 ÷ 4 × (5 − 3) + 7",
-    opts: ["A. 12", "B. 19", "C. 14", "D. 21"],
-    ans: "B"
-  },
-  {
-    q: "Evaluate: 2/3 + 5/9",
-    opts: ["A. 7/12", "B. 11/9", "C. 7/9", "D. 13/9"],
-    ans: "B"
-  },
-  {
-    q: "Expansion of 7(x + 4) gives:",
-    opts: ["A. 7x + 4", "B. x + 28", "C. 7x + 28", "D. 28x"],
-    ans: "C"
-  },
-  {
-    q: "Simplify 4(x + 3) − 3(x − 2).",
-    opts: ["A. x + 6", "B. x + 18", "C. x − 6", "D. 7x + 18"],
-    ans: "B"
-  },
-  {
-    q: "If a = 3 and b = −3, find a + b.",
-    opts: ["A. 6", "B. −6", "C. 0", "D. 9"],
-    ans: "C"
-  },
-  {
-    q: "Multiply (a + 4)(a + 5).",
-    opts: ["A. a² + 20", "B. a² + 9a + 20", "C. 2a + 9", "D. a² + 9a + 9"],
-    ans: "B"
-  },
-  {
-    q: "Find the area of a circle with radius 14 cm. [Take π = 22/7]",
-    opts: ["A. 88 cm²", "B. 616 cm²", "C. 196 cm²", "D. 28 cm²"],
-    ans: "B"
-  },
-  {
-    q: "In a right-angled triangle, if the two shorter sides are 6 cm and 8 cm, the hypotenuse is:",
-    opts: ["A. 10 cm", "B. 14 cm", "C. 100 cm", "D. 48 cm"],
-    ans: "A"
-  },
-  {
-    q: "If a = (2, 6) and b = (5, 3), find a + b.",
-    opts: ["A. (7, 9)", "B. (3, 3)", "C. (7, 3)", "D. (5, 9)"],
-    ans: "A"
-  },
-  {
-    q: "Find 4 × (2, 5).",
-    opts: ["A. (6, 9)", "B. (8, 5)", "C. (8, 20)", "D. (4, 20)"],
-    ans: "C"
-  },
-  {
-    q: "In trigonometry, cos θ = ?",
-    opts: ["A. Adj/Hyp", "B. Opp/Adj", "C. Hyp/Opp", "D. Adj/Opp"],
-    ans: "A"
-  },
-  {
-    q: "A bag contains 5 red and 3 green balls. What is the probability of picking a green ball?",
-    opts: ["A. 3/8", "B. 5/8", "C. 1/3", "D. 3/5"],
-    ans: "A"
-  },
-  {
-    q: "Tossing a fair coin three times, the sample space size is:",
-    opts: ["A. 3", "B. 6", "C. 8", "D. 9"],
-    ans: "C"
-  },
-  {
-    q: "Express 0.45 as a percentage.",
-    opts: ["A. 4.5%", "B. 0.45%", "C. 45%", "D. 450%"],
-    ans: "C"
-  },
-  {
-    q: "Evaluate 4² + 3³.",
-    opts: ["A. 43", "B. 29", "C. 25", "D. 37"],
-    ans: "A"
-  },
-  {
-    q: "Factorize 8x + 24.",
-    opts: ["A. 8(x + 3)", "B. x(8 + 24)", "C. 24(x + 8)", "D. 8(x + 24)"],
-    ans: "A"
-  },
-  {
-    q: "The circumference of a circle formula is:",
-    opts: ["A. πr²", "B. 2πr", "C. πd²", "D. l × w"],
-    ans: "B"
-  },
-  {
-    q: "In the vector (x, y), y represents:",
-    opts: ["A. Horizontal shift", "B. Gradient", "C. Vertical shift", "D. Scalar"],
-    ans: "C"
-  },
-  {
-    q: "Find the probability of scoring an even number on a fair six-sided die.",
-    opts: ["A. 1", "B. 1/6", "C. 1/3", "D. 1/2"],
-    ans: "D"
-  },
-  {
-    q: "Simplify 3x/9 + x/3.",
-    opts: ["A. 4x/12", "B. 2x/3", "C. x", "D. x/3"],
-    ans: "B"
-  },
-  {
-    q: "If the radius of a circle is 21 cm, the diameter is:",
-    opts: ["A. 42 cm", "B. 10.5 cm", "C. 66 cm", "D. 33 cm"],
-    ans: "A"
-  },
-  {
-    q: "Expansion of (3x + 2)²:",
-    opts: ["A. 9x² + 4", "B. 9x² + 6x + 4", "C. 9x² + 12x + 4", "D. 3x² + 12x + 2"],
-    ans: "C"
-  },
-  {
-    q: "Subtract (3, 5) from (8, 11).",
-    opts: ["A. (5, 6)", "B. (11, 16)", "C. (−5, −6)", "D. (24, 55)"],
-    ans: "A"
-  },
-  {
-    q: "What is 30% of 80?",
-    opts: ["A. 8", "B. 24", "C. 30", "D. 20"],
-    ans: "B"
-  },
-  {
-    q: "A triangle with sides 8, 15, 17 is a right-angled triangle.",
-    opts: ["A. True", "B. False", "C. Cannot tell", "D. Only sometimes"],
-    ans: "A"
-  },
-  {
-    q: "The probability of a certain event is:",
-    opts: ["A. 0", "B. 0.5", "C. −1", "D. 1"],
-    ans: "D"
-  },
-  {
-    q: "Simplify 9/15 to its simplest form.",
-    opts: ["A. 1/2", "B. 4/5", "C. 3/5", "D. 2/3"],
-    ans: "C"
-  },
-  {
-    q: "In trigonometry, 'SOH' stands for:",
-    opts: ["A. sin = Opp/Hyp", "B. sin = Adj/Hyp", "C. sin = Opp/Adj", "D. sin = Hyp/Opp"],
-    ans: "A"
-  },
-  {
-    q: "Expand −3x(4x + 5).",
-    opts: ["A. −12x² − 15x", "B. −12x − 15x", "C. 12x² + 15x", "D. −12x² + 15x"],
-    ans: "A"
-  },
-  {
-    q: "Find the perimeter of a rectangle with sides 2½ cm and 4 cm.",
-    opts: ["A. 6½ cm", "B. 13 cm", "C. 10 cm", "D. 10 cm"],
-    ans: "B"
-  },
-  {
-    q: "Rolling a die and picking a card from a deck are:",
-    opts: ["A. Dependent events", "B. Independent events", "C. Mutually exclusive", "D. Impossible"],
-    ans: "B"
-  },
-  {
-    q: "If p = (−2, 3), find 3p.",
-    opts: ["A. (1, 6)", "B. (−6, 9)", "C. (−6, 3)", "D. (−6, −9)"],
-    ans: "B"
-  },
-  {
-    q: "The sum of probabilities of all possible outcomes equals:",
-    opts: ["A. 0", "B. 0.5", "C. 100", "D. 1"],
-    ans: "D"
-  },
-  {
-    q: "Express 3 4/7 as an improper fraction.",
-    opts: ["A. 12/7", "B. 25/7", "C. 21/7", "D. 28/7"],
-    ans: "B"
-  },
-  {
-    q: "Evaluate 36 ÷ 4 + (2 × 8).",
-    opts: ["A. 25", "B. 22", "C. 25", "D. 25"],
-    ans: "A"
-  },
-  {
-    q: "Which vector equals AB + BC?",
-    opts: ["A. BA", "B. CA", "C. AC", "D. CB"],
-    ans: "C"
-  },
-  {
-    q: "Find the area of a semi-circle with radius 14 cm. [π = 22/7]",
-    opts: ["A. 616 cm²", "B. 308 cm²", "C. 88 cm²", "D. 154 cm²"],
-    ans: "B"
-  },
-  {
-    q: "If a student scores 54 out of 90, what is the percentage?",
-    opts: ["A. 54%", "B. 60%", "C. 70%", "D. 80%"],
-    ans: "B"
-  },
-  // ── EXTRA 20 (from Section B topics, all MCQ) ──
-  {
-    q: "A circular garden has a diameter of 14 m. Its area is approximately: [π = 22/7]",
-    opts: ["A. 44 m²", "B. 154 m²", "C. 616 m²", "D. 308 m²"],
-    ans: "B"
-  },
-  {
-    q: "A rectangular stage has length 10 m and width 4 m. Its perimeter is:",
-    opts: ["A. 14 m", "B. 40 m", "C. 28 m", "D. 20 m"],
-    ans: "C"
-  },
-  {
-    q: "Vectors p = (3, 1) and q = (2, 4). The total displacement p + q is:",
-    opts: ["A. (5, 5)", "B. (1, 3)", "C. (6, 4)", "D. (5, 3)"],
-    ans: "A"
-  },
-  {
-    q: "A bag has 5 red, 3 blue, and 2 yellow counters. Probability of NOT picking blue is:",
-    opts: ["A. 3/10", "B. 7/10", "C. 1/2", "D. 2/5"],
-    ans: "B"
-  },
-  {
-    q: "If 2/7 of a field is planted, what fraction remains unplanted?",
-    opts: ["A. 2/7", "B. 5/7", "C. 4/7", "D. 7/9"],
-    ans: "B"
-  },
-  {
-    q: "Simplify using order of operations: 1/2 + 3/4 × 2/3 − 1/4",
-    opts: ["A. 3/4", "B. 1", "C. 5/4", "D. 1/2"],
-    ans: "A"
-  },
-  {
-    q: "Kofi answered 35 out of 50 questions correctly. What percentage did he get WRONG?",
-    opts: ["A. 30%", "B. 35%", "C. 70%", "D. 65%"],
-    ans: "A"
-  },
-  {
-    q: "A worker spends 1/4 on food and 1/3 on rent. What fraction is left?",
-    opts: ["A. 5/12", "B. 7/12", "C. 1/2", "D. 5/7"],
-    ans: "A"
-  },
-  {
-    q: "Express 0.375 as a fraction in its simplest form.",
-    opts: ["A. 3/8", "B. 375/1000", "C. 4/9", "D. 1/3"],
-    ans: "A"
-  },
-  {
-    q: "Expand and simplify 2(x − 3) − 3(x − 4).",
-    opts: ["A. −x + 6", "B. −x − 6", "C. x + 6", "D. −x + 18"],
-    ans: "A"
-  },
-  {
-    q: "Multiply (3x + 2)(3x − 2).",
-    opts: ["A. 9x² + 4", "B. 9x² − 4", "C. 6x² − 4", "D. 9x² − 6x − 4"],
-    ans: "B"
-  },
-  {
-    q: "If x = 3 and y = −1, evaluate (4x² + 2xy) / 2.",
-    opts: ["A. 15", "B. 12", "C. 21", "D. 9"],
-    ans: "A"
-  },
-  {
-    q: "Simplify the algebraic fraction: (a+b)/4 − (a−b)/2.",
-    opts: ["A. (−a + 3b)/4", "B. (a + b)/4", "C. (3b − a)/4", "D. (a − 3b)/4"],
-    ans: "C"
-  },
-  {
-    q: "A ladder 10 m long leans against a wall. If the foot is 6 m away, how high does it reach?",
-    opts: ["A. 6 m", "B. 8 m", "C. 4 m", "D. 7 m"],
-    ans: "B"
-  },
-  {
-    q: "Given u = (−2, 3) and v = (4, 1), calculate 2u + 3v.",
-    opts: ["A. (8, 9)", "B. (8, 3)", "C. (4, 9)", "D. (16, 9)"],
-    ans: "A"
-  },
-  {
-    q: "A fair die is thrown. Probability of getting a number greater than 4 is:",
-    opts: ["A. 1/3", "B. 2/3", "C. 1/6", "D. 1/2"],
-    ans: "A"
-  },
-  {
-    q: "A box has 4 blue and 3 pink pens (with replacement). Probability of picking two blue pens is:",
-    opts: ["A. 16/49", "B. 12/49", "C. 4/7", "D. 8/49"],
-    ans: "A"
-  },
-  {
-    q: "From the same box (4 blue, 3 pink), probability of picking two of the SAME colour is:",
-    opts: ["A. 25/49", "B. 16/49", "C. 9/49", "D. 1/2"],
-    ans: "A"
-  },
-  {
-    q: "Probability of a student passing is 0.65. Probability of failing as a fraction is:",
-    opts: ["A. 13/20", "B. 7/20", "C. 3/5", "D. 2/5"],
-    ans: "B"
-  },
-  {
-    q: "Find the circumference of a circle whose area is 616 cm². [π = 22/7]",
-    opts: ["A. 44 cm", "B. 88 cm", "C. 77 cm", "D. 154 cm"],
-    ans: "B"
+  basic6: {
+    1: [
+      // NUMBERS (10) — Trial 1: place value (7 in 472305), rounding to nearest 100, multiples of 9, number line −2+5, product of negatives, real-world juice problem, integer ops
+      {q:"What is the value of the digit 7 in the number 472,305?", opts:["700","7,000","70,000","70"], ans:2, topic:"Numbers"},
+      {q:"Round 5,678 to the nearest hundred.", opts:["5,600","5,700","6,000","5,680"], ans:1, topic:"Numbers"},
+      {q:"Which number is a multiple of 9?", opts:["19","28","54","64"], ans:2, topic:"Numbers"},
+      {q:"On a number line, start at −2 and move 5 units right. Where do you land?", opts:["−7","3","7","−3"], ans:1, topic:"Numbers"},
+      {q:"What is the product of −3 and 4?", opts:["7","−1","−12","12"], ans:2, topic:"Numbers"},
+      {q:"A school bought 144 packs of juice, each with 12 boxes. How many boxes in total?", opts:["1,448","1,628","1,728","1,528"], ans:2, topic:"Numbers"},
+      {q:"Ben is 3 m below the surface (−3). Cam is 2 m above Ben. What is Cam's position relative to the surface?", opts:["−5 m","5 m","−1 m","1 m"], ans:2, topic:"Numbers"},
+      {q:"Calculate −5 + (−3).", opts:["2","−2","−8","8"], ans:2, topic:"Numbers"},
+      {q:"Simplify: −8 − (−8).", opts:["16","−16","0","1"], ans:2, topic:"Numbers"},
+      {q:"What is the value of the digit 4 in 340,621?", opts:["4","400","4,000","40,000"], ans:3, topic:"Numbers"},
+      // ALGEBRA (10) — Trial 1: word-to-expression, substitution, perimeter of square with variable, one-fourth expression, simplify
+      {q:"\"Sum of 8 and s\" is written algebraically as:", opts:["8s","8 − s","8 + s","s ÷ 8"], ans:2, topic:"Algebra"},
+      {q:"\"Take away 4 from m\" is translated as:", opts:["4 − m","m − 4","4m","m + 4"], ans:1, topic:"Algebra"},
+      {q:"If x = 3, what is the value of 4x + 3?", opts:["10","17","15","21"], ans:1, topic:"Algebra"},
+      {q:"Find the perimeter of a square with side k.", opts:["4k","k²","2k","k + 4"], ans:0, topic:"Algebra"},
+      {q:"Evaluate 3y − 5 when y = 5.", opts:["15","35","10","5"], ans:2, topic:"Algebra"},
+      {q:"Write \"9 times the sum of 8 and p\" as an expression.", opts:["9 + 8p","9(8 + p)","9 × 8 + p","8(9 + p)"], ans:1, topic:"Algebra"},
+      {q:"A rectangle has length 2a and width b. What is its perimeter?", opts:["2ab","2a + b","2(2a + b)","4a + 2b"], ans:2, topic:"Algebra"},
+      {q:"Simplify: 5x + 3x − 2x.", opts:["6x","8x","10x","4x"], ans:0, topic:"Algebra"},
+      {q:"\"One-fourth of t added to 5\" as an expression:", opts:["t/4 + 5","4t + 5","t + 5/4","5t/4"], ans:0, topic:"Algebra"},
+      {q:"Simplify: 7m + 2 − 3m + 4.", opts:["4m + 6","10m + 6","4m − 6","4m + 2"], ans:0, topic:"Algebra"},
+      // DIRECTIONS (10) — Trial 1: opposite of SE, cardinal points count, 90° clockwise from N, grid scenario, SW direction, NW definition
+      {q:"Which cardinal point is exactly opposite to South-East (SE)?", opts:["North-East","South-West","North-West","North"], ans:2, topic:"Directions"},
+      {q:"How many main cardinal points are there?", opts:["4","8","6","2"], ans:0, topic:"Directions"},
+      {q:"If you are facing North and turn 90° clockwise, which direction do you face?", opts:["West","South","East","North-East"], ans:2, topic:"Directions"},
+      {q:"The school is 3 units North and 2 units East of Kofi's house. In which direction is the school?", opts:["North-West","North-East","South-East","South-West"], ans:1, topic:"Directions"},
+      {q:"Moving South then West gives which combined direction?", opts:["SE","NW","SW","NE"], ans:2, topic:"Directions"},
+      {q:"What is the direction halfway between North and West?", opts:["North-West","South-West","North-East","West-North"], ans:0, topic:"Directions"},
+      {q:"Point P is North of X but West of C. Where is P relative to C?", opts:["North","North-West","South","East"], ans:1, topic:"Directions"},
+      {q:"The Food Court is 5 units East and 3 units North of Kofi's house. In which direction is it?", opts:["South-West","South-East","North-West","North-East"], ans:3, topic:"Directions"},
+      {q:"If you face East and turn 180°, which direction do you now face?", opts:["North","South","West","East"], ans:2, topic:"Directions"},
+      {q:"Which compass direction is directly opposite to North-East?", opts:["South-West","North-West","South-East","West"], ans:0, topic:"Directions"},
+      // PROBABILITY (10) — Trial 1: coin P(heads), die outcomes, theoretical definition, spinner 1/8, experimental→theoretical, impossible event, bag 3R2B, green from 3R2G1B, spinner >5, experimental tails
+      {q:"When tossing a coin, what is the probability of getting Heads?", opts:["1/4","1","1/2","0"], ans:2, topic:"Probability"},
+      {q:"How many possible outcomes are there when rolling a six-sided die?", opts:["2","6","12","1"], ans:1, topic:"Probability"},
+      {q:"Theoretical probability is:", opts:["What actually happens","What we expect to happen","A guess","Impossible"], ans:1, topic:"Probability"},
+      {q:"In a spinner with 8 equal sectors numbered 1–8, what is the probability of spinning a 5?", opts:["1/5","1/4","1/8","1/2"], ans:2, topic:"Probability"},
+      {q:"If you roll a die 100 times, the experimental probability gets closer to:", opts:["The highest number","Zero","The theoretical probability","The first roll result"], ans:2, topic:"Probability"},
+      {q:"Which is an IMPOSSIBLE event?", opts:["Rolling a 7 on a standard die","Rain in June","Tossing a Tail","Sunrise tomorrow"], ans:0, topic:"Probability"},
+      {q:"A bag has 3 red and 2 blue balls. What is the probability of picking a red ball?", opts:["2/5","1/5","3/2","3/5"], ans:3, topic:"Probability"},
+      {q:"A bag has 6 tops: 3 Red, 2 Green, 1 Blue. What is the probability of picking Green?", opts:["1/6","1/3","1/2","2/3"], ans:1, topic:"Probability"},
+      {q:"A spinner has 8 equal sections. What is P(number greater than 5)?", opts:["1/8","2/8","3/8","4/8"], ans:2, topic:"Probability"},
+      {q:"Students tossed a coin 20 times: 11 Heads, 9 Tails. What is the experimental P(Tails)?", opts:["9/20","11/20","1/2","9/11"], ans:0, topic:"Probability"}
+    ],
+    2: [
+      // NUMBERS (10) — Trial 2: different place value (5 in 253841), round to 100, NOT multiple of 9, −4+7 on line, negative×negative, 12×12, diver context, 9+(−15), digit 2 in millions, round to 1000
+      {q:"What is the place value of 5 in 253,841?", opts:["5","500","5,000","50,000"], ans:2, topic:"Numbers"},
+      {q:"Round 8,349 to the nearest hundred.", opts:["8,300","8,400","8,000","8,350"], ans:0, topic:"Numbers"},
+      {q:"Which number is NOT a multiple of 9?", opts:["18","36","45","56"], ans:3, topic:"Numbers"},
+      {q:"Start at −4 on a number line and move 7 units right. Where do you land?", opts:["−11","11","3","−3"], ans:2, topic:"Numbers"},
+      {q:"What is (−6) × (−2)?", opts:["−12","−8","8","12"], ans:3, topic:"Numbers"},
+      {q:"Calculate 12 × 12 using the distributive property.", opts:["124","134","144","154"], ans:2, topic:"Numbers"},
+      {q:"A diver is at −7 m and rises 4 m. What is her new position?", opts:["−11 m","11 m","−3 m","3 m"], ans:2, topic:"Numbers"},
+      {q:"Calculate 9 + (−15).", opts:["24","−24","−6","6"], ans:2, topic:"Numbers"},
+      {q:"What is the value of the digit 2 in 2,784,500?", opts:["2,000","20,000","200,000","2,000,000"], ans:3, topic:"Numbers"},
+      {q:"Round 73,512 to the nearest thousand.", opts:["73,000","74,000","73,500","70,000"], ans:0, topic:"Numbers"},
+      // ALGEBRA (10) — Trial 2: "subtract 10 from p", two-variable simplification, 5n−7 at n=4, area expression with xy, triple+2, 6p−2p+4p, expand 2(x+3), square with (n+1), 4k+7−k−3, 3y² at y=2
+      {q:"\"Subtract 10 from p\" is written as:", opts:["10 − p","p + 10","p − 10","10p"], ans:2, topic:"Algebra"},
+      {q:"Simplify: 9a + 2b − 4a + b.", opts:["5a + 3b","13a + b","5a − 3b","5a + b"], ans:0, topic:"Algebra"},
+      {q:"If n = 4, find the value of 5n − 7.", opts:["13","27","20","12"], ans:0, topic:"Algebra"},
+      {q:"Write the area of a rectangle with sides 3x and 2y.", opts:["3x + 2y","6xy","5xy","6x + y"], ans:1, topic:"Algebra"},
+      {q:"\"Triple a number h, then add 2\" as an expression:", opts:["h + 3 + 2","3h + 2","3(h + 2)","3 + h + 2"], ans:1, topic:"Algebra"},
+      {q:"Simplify: 6p − 2p + 4p.", opts:["8p","10p","12p","2p"], ans:0, topic:"Algebra"},
+      {q:"Evaluate 2(x + 3) when x = 5.", opts:["13","16","20","10"], ans:1, topic:"Algebra"},
+      {q:"A square has side (n + 1). Write its perimeter.", opts:["n + 1","4n + 4","4n + 1","2n + 2"], ans:1, topic:"Algebra"},
+      {q:"Simplify: 4k + 7 − k − 3.", opts:["3k + 4","5k + 4","3k + 10","5k − 4"], ans:0, topic:"Algebra"},
+      {q:"If y = 2, what is 3y²?", opts:["12","18","6","36"], ans:0, topic:"Algebra"},
+      // DIRECTIONS (10) — Trial 2: opposite of S, 90° cw from W, 8-point compass count, SW library, between E and S, Ama NE, 180° from SW, between N and E, pure west point, opposite of NW
+      {q:"What is the direction directly opposite to South?", opts:["East","West","North","South-West"], ans:2, topic:"Directions"},
+      {q:"If you face West and turn 90° clockwise, you now face:", opts:["South","North","East","West"], ans:1, topic:"Directions"},
+      {q:"How many compass points are on a full 8-point compass?", opts:["4","6","8","12"], ans:2, topic:"Directions"},
+      {q:"A library is 4 units South and 4 units West of a school. In which direction is the library from the school?", opts:["South-East","South-West","North-West","North-East"], ans:1, topic:"Directions"},
+      {q:"What direction is between East and South?", opts:["North-East","South-West","South-East","North-West"], ans:2, topic:"Directions"},
+      {q:"Ama walks 3 km North, then 3 km East. In what direction is she from her start?", opts:["North","North-East","East","North-West"], ans:1, topic:"Directions"},
+      {q:"If you are facing South-West and do a 180° turn, you face:", opts:["North-East","North-West","South-East","East"], ans:0, topic:"Directions"},
+      {q:"On a compass, what is directly between North and East?", opts:["South-East","North-West","South-West","North-East"], ans:3, topic:"Directions"},
+      {q:"A point is 2 units West and 0 units North/South of the origin. What direction is it?", opts:["North","South","West","East"], ans:2, topic:"Directions"},
+      {q:"The opposite of North-West is:", opts:["South-East","South-West","North-East","East"], ans:0, topic:"Directions"},
+      // PROBABILITY (10) — Trial 2: 4G6Y bag P(G), certain event on a die, experimental 28/50 Heads, 4-colour spinner, experimental→theoretical (concept), 2R2B1G pencils, P=0, P(even on die), 4R3B3G bag P(blue), P=1 event
+      {q:"A bag has 4 green and 6 yellow balls. What is the probability of picking green?", opts:["4/6","2/5","6/10","4/10"], ans:3, topic:"Probability"},
+      {q:"Which outcome is CERTAIN when rolling a die numbered 1–6?", opts:["Rolling a 7","Rolling a number less than or equal to 6","Rolling a 6 every time","Not rolling any number"], ans:1, topic:"Probability"},
+      {q:"A coin is flipped 50 times. Heads comes up 28 times. What is the experimental P(Heads)?", opts:["1/2","28/50","22/50","28/22"], ans:1, topic:"Probability"},
+      {q:"A spinner has 4 equal sections: Red, Blue, Green, Yellow. P(Blue) =", opts:["1/2","1/3","1/4","1/8"], ans:2, topic:"Probability"},
+      {q:"As the number of trials increases, experimental probability gets closer to:", opts:["0","100%","Theoretical probability","The most recent result"], ans:2, topic:"Probability"},
+      {q:"A box has 5 pencils: 2 red, 2 blue, 1 green. P(red) =", opts:["1/5","2/5","3/5","2/3"], ans:1, topic:"Probability"},
+      {q:"If P(event) = 0, the event is:", opts:["Certain","Likely","Possible","Impossible"], ans:3, topic:"Probability"},
+      {q:"A die is rolled. P(even number) =", opts:["1/6","2/6","3/6","4/6"], ans:2, topic:"Probability"},
+      {q:"A bag has 10 balls: 4 red, 3 blue, 3 green. P(blue) =", opts:["3/10","4/10","1/3","3/7"], ans:0, topic:"Probability"},
+      {q:"Which event has a probability of 1?", opts:["Rolling a 7 on a die","Picking red from an all-red bag","Tossing Heads","Getting an even number every time on a die"], ans:1, topic:"Probability"}
+    ],
+    3: [
+      // NUMBERS (10) — Trial 3: digit 9 in 891204, round 6450 to 1000, 6th multiple of 9, 4−9 on number line, −7+10, 25×4 doubling, temperature −2+9, −12÷4, order −5,3,0,−2, round 999 to 100
+      {q:"What is the value of the digit 9 in 891,204?", opts:["9","900","9,000","90,000"], ans:3, topic:"Numbers"},
+      {q:"Round 6,450 to the nearest thousand.", opts:["6,000","6,500","7,000","6,400"], ans:0, topic:"Numbers"},
+      {q:"What is the 6th multiple of 9?", opts:["45","54","63","72"], ans:1, topic:"Numbers"},
+      {q:"Start at 4 on a number line and move 9 units left. Where do you land?", opts:["13","−13","−5","5"], ans:2, topic:"Numbers"},
+      {q:"What is (−7) + 10?", opts:["−17","−3","3","17"], ans:2, topic:"Numbers"},
+      {q:"Use doubling to calculate 25 × 4.", opts:["50","75","100","200"], ans:2, topic:"Numbers"},
+      {q:"A temperature was −2°C and rose by 9°C. What is the new temperature?", opts:["−11°C","11°C","7°C","−7°C"], ans:2, topic:"Numbers"},
+      {q:"What is −12 ÷ 4?", opts:["3","−3","−8","8"], ans:1, topic:"Numbers"},
+      {q:"Which shows the correct order from least to greatest: −5, 3, 0, −2?", opts:["−5, −2, 0, 3","3, 0, −2, −5","0, −2, −5, 3","−2, −5, 0, 3"], ans:0, topic:"Numbers"},
+      {q:"What is 999 rounded to the nearest hundred?", opts:["900","1,000","990","1,100"], ans:1, topic:"Numbers"},
+      // ALGEBRA (10) — Trial 3: "5 more than twice r", 8a−3a+a, 4p+1 at p=3, rectangle perimeter (3x)+(x+1), expand 2(3y+4), q/2+4 at q=6, 3x+5+2x−3, like term to 5ab, "4k−3", 2x² at x=3
+      {q:"\"Five more than twice a number r\" as an expression:", opts:["5r + 2","2r + 5","2(r + 5)","5 + r + 2"], ans:1, topic:"Algebra"},
+      {q:"Simplify: 8a − 3a + a.", opts:["6a","4a","5a","12a"], ans:0, topic:"Algebra"},
+      {q:"Evaluate 4p + 1 when p = 3.", opts:["12","13","15","16"], ans:1, topic:"Algebra"},
+      {q:"A rectangle has length (3x) and width (x + 1). Write its perimeter.", opts:["4x + 1","8x + 2","6x + 2","3x² + x"], ans:1, topic:"Algebra"},
+      {q:"Simplify: 2(3y + 4).", opts:["6y + 4","6y + 8","5y + 6","3y + 8"], ans:1, topic:"Algebra"},
+      {q:"If q = 6, find q ÷ 2 + 4.", opts:["3","5","7","10"], ans:2, topic:"Algebra"},
+      {q:"Collect like terms: 3x + 5 + 2x − 3.", opts:["5x + 2","5x − 2","x + 2","5x + 8"], ans:0, topic:"Algebra"},
+      {q:"Which term is like to 5ab?", opts:["5a","5b","3ab","5a²b"], ans:2, topic:"Algebra"},
+      {q:"\"Subtract 3 from the product of 4 and k\" as an expression:", opts:["4k − 3","3 − 4k","4(k − 3)","k − 12"], ans:0, topic:"Algebra"},
+      {q:"Evaluate 2x² when x = 3.", opts:["12","18","36","6"], ans:1, topic:"Algebra"},
+      // DIRECTIONS (10) — Trial 3: opposite of E, 180° from NE, market due East, NW park, between S and W, walk E turn right, Game Center SW, G to F distance, sunset direction, SE ship 90° cw
+      {q:"Which cardinal direction is opposite to East?", opts:["North","West","South","South-West"], ans:1, topic:"Directions"},
+      {q:"If you face North-East and turn 180°, you face:", opts:["North-West","South-East","South-West","East"], ans:2, topic:"Directions"},
+      {q:"A market is 5 km East and 0 km North/South of a town. In which direction is the market from the town?", opts:["North","East","South","West"], ans:1, topic:"Directions"},
+      {q:"From a grid, the park is 2 units North and 2 units West of the origin. Which direction is this?", opts:["North-East","South-West","North-West","South-East"], ans:2, topic:"Directions"},
+      {q:"On an 8-point compass, what direction is between South and West?", opts:["South-East","North-West","South-West","West-South"], ans:2, topic:"Directions"},
+      {q:"If you walk East then turn right (90°), you are now walking:", opts:["North","South","East","West"], ans:1, topic:"Directions"},
+      {q:"The Game Center is 4 units West and 2 units South of the origin. In which direction is it?", opts:["North-West","South-East","North-East","South-West"], ans:3, topic:"Directions"},
+      {q:"To travel from point G (4 West, 2 South) to point F (5 East, 3 North), how many units East must you move?", opts:["1","4","9","5"], ans:2, topic:"Directions"},
+      {q:"In which direction does the sun set?", opts:["North","South","East","West"], ans:3, topic:"Directions"},
+      {q:"A ship sails South-East. After turning 90° clockwise, it now sails:", opts:["North-East","South-West","North-West","South"], ans: 1, topic:"Directions"},
+      // PROBABILITY (10) — Trial 3: P=1 meaning, P(3) on die=1/6, P(Blue) from 3R2G1B, experimental 15/40, P(not red) from 3R2G1B, spinner P(<4), 1000 tosses approach, all-green bag P=1, experimental depends on, P(9) on 1–8 spinner
+      {q:"What does P(event) = 1 mean?", opts:["The event is impossible","The event is certain","The event is unlikely","The event may happen"], ans:1, topic:"Probability"},
+      {q:"A die is rolled. P(getting a 3) =", opts:["1/3","1/6","1/2","3/6"], ans:1, topic:"Probability"},
+      {q:"A bag has 6 tops: 3 Red, 2 Green, 1 Blue. What is P(Blue)?", opts:["1/3","1/2","1/6","2/6"], ans:2, topic:"Probability"},
+      {q:"A class spun a spinner 40 times and got Red 15 times. The experimental P(Red) =", opts:["15/25","15/40","40/15","1/4"], ans:1, topic:"Probability"},
+      {q:"From a bag of 3 Red, 2 Green, 1 Blue tops, what is P(NOT red)?", opts:["3/6","2/6","1/6","3/6"], ans:0, topic:"Probability"},
+      {q:"A spinner has 8 equal sections numbered 1–8. P(number less than 4) =", opts:["4/8","3/8","2/8","5/8"], ans:1, topic:"Probability"},
+      {q:"If you toss a coin 1,000 times instead of 20 times, the result will be:", opts:["Further from 1/2","Closer to 1/2","Always exactly 1/2","Always 0"], ans:1, topic:"Probability"},
+      {q:"A bag has only green marbles. P(picking green) =", opts:["0","1/2","1","Depends on the count"], ans:2, topic:"Probability"},
+      {q:"What does experimental probability depend on?", opts:["A formula only","Actual trials performed","Guesswork","The theoretical value only"], ans:1, topic:"Probability"},
+      {q:"P(spinning a 9 on a 1–8 spinner) is:", opts:["1/8","0","1/9","9/8"], ans:1, topic:"Probability"}
+    ]
   }
-];
+,
+  basic7: {
+    1: [
+      // NUMBERS & FRACTIONS (10) — from objectives: equivalent fractions, simplify, mixed to improper, plates problem, ratio, juice ml, ratio smaller share, % conversion, ordering, fraction of quantity
+      {q:"Which fraction is equivalent to 1/2?", opts:["2/6","3/6","4/6","5/6"], ans:1, topic:"Numbers"},
+      {q:"Express 0.75 as a fraction in its simplest form.", opts:["75/100","3/4","7/5","15/20"], ans:1, topic:"Numbers"},
+      {q:"A set of stacked plates weighs 5 kg. Each plate weighs 250 g. How many plates are there?", opts:["2","40","20","14"], ans:2, topic:"Numbers"},
+      {q:"Convert 2 and 3/4 to an improper fraction.", opts:["9/4","11/4","8/4","10/4"], ans:1, topic:"Numbers"},
+      {q:"Simplify the ratio 12:8 to its simplest whole number form.", opts:["6:4","4:3","3:2","2:1"], ans:2, topic:"Numbers"},
+      {q:"A class of 38 learners shares 19 litres of juice equally. How many millilitres does each learner get?", opts:["500 ml","250 ml","750 ml","200 ml"], ans:0, topic:"Numbers"},
+      {q:"Share 20 oranges in the ratio 2:3. What is the smaller share?", opts:["4","8","12","10"], ans:1, topic:"Numbers"},
+      {q:"Express 3/4 as a percentage.", opts:["34%","70%","75%","80%"], ans:2, topic:"Numbers"},
+      {q:"Arrange in ascending order: 1/2, 1/4, 3/4, 1/3.", opts:["1/2, 1/3, 1/4, 3/4","1/4, 1/3, 1/2, 3/4","3/4, 1/2, 1/3, 1/4","1/4, 1/2, 1/3, 3/4"], ans:1, topic:"Numbers"},
+      {q:"Find 2/3 of 18.", opts:["6","9","12","15"], ans:2, topic:"Numbers"},
+      // ALGEBRA (10) — from objectives
+      {q:"8 subtracted from the product of 5 and n is written as:", opts:["8 minus 5n","5n minus 8","5 times (n minus 8)","8n minus 5"], ans:1, topic:"Algebra"},
+      {q:"2 more than 5 times a number n is written as:", opts:["5n + 2","2n + 5","5 + 2n","n + 7"], ans:0, topic:"Algebra"},
+      {q:"Simplify: 3x + 2y minus x + 4y.", opts:["2x + 6y","4x + 2y","2x + 2y","3x + 6y"], ans:0, topic:"Algebra"},
+      {q:"Simplify: 4a squared + 3a minus a squared + a.", opts:["3a squared + 4a","5a squared + 2a","4a squared + 2a","3a squared + 2a"], ans:0, topic:"Algebra"},
+      {q:"Solve for n: 3n + 4 = 16.", opts:["5","12","4","8"], ans:2, topic:"Algebra"},
+      {q:"Expand: 3(2x + 5).", opts:["6x + 5","6x + 15","6x + 8","3x + 15"], ans:1, topic:"Algebra"},
+      {q:"Half of the sum of p and q as an expression:", opts:["p + q/2","(p + q)/2","2(p + q)","p/2 + q"], ans:1, topic:"Algebra"},
+      {q:"Simplify: 5(x minus 2) minus 2(x + 1).", opts:["3x minus 12","3x + 8","7x minus 12","3x minus 8"], ans:0, topic:"Algebra"},
+      {q:"Evaluate x squared divided by y if x = 6 and y = 4.", opts:["3","13","9","15"], ans:2, topic:"Algebra"},
+      {q:"Simplify: (3/4) divided by (3/8).", opts:["9/32","2","1/2","6/4"], ans:1, topic:"Algebra"},
+      // GEOMETRY (10) — from objectives
+      {q:"A square has a side of 7 cm. Find its perimeter.", opts:["14 cm","21 cm","28 cm","49 cm"], ans:2, topic:"Geometry"},
+      {q:"A right-angled triangle has sides 3 cm and 4 cm. What is the hypotenuse?", opts:["5 cm","6 cm","7 cm","Square root of 7 cm"], ans:0, topic:"Geometry"},
+      {q:"A circle has a radius of 7 cm. Find its circumference. (pi = 22/7)", opts:["22 cm","44 cm","154 cm","88 cm"], ans:1, topic:"Geometry"},
+      {q:"Convert 350 cm into metres.", opts:["0.35 m","3.5 m","35 m","3500 m"], ans:1, topic:"Geometry"},
+      {q:"The area of a rectangle with length 8 cm and width 5 cm is:", opts:["26 cm squared","40 cm squared","13 cm squared","80 cm squared"], ans:1, topic:"Geometry"},
+      {q:"A water tank is circular with diameter 14 m. What is its circumference? (pi = 22/7)", opts:["22 m","44 m","88 m","154 m"], ans:1, topic:"Geometry"},
+      {q:"A truck moves with horizontal component 6 and vertical component 8. What is the magnitude?", opts:["14","10","Square root of 14","48"], ans:1, topic:"Geometry"},
+      {q:"A circle has a diameter of 21 cm. Find its radius.", opts:["21 cm","7 cm","10.5 cm","42 cm"], ans:2, topic:"Geometry"},
+      {q:"In a column vector with top value 4 and bottom value 3, what is the horizontal component?", opts:["4","3","7","1"], ans:0, topic:"Geometry"},
+      {q:"A circle has a radius of 14 cm. Find its area. (pi = 22/7)", opts:["44 cm squared","88 cm squared","154 cm squared","616 cm squared"], ans:3, topic:"Geometry"},
+      // PROBABILITY (10) — from objectives
+      {q:"The day after Monday will be Tuesday. This event is:", opts:["Impossible","Possible","Certain","Unlikely"], ans:2, topic:"Probability"},
+      {q:"Obtaining a total of 13 when throwing two standard dice is:", opts:["Certain","Possible","Impossible","Likely"], ans:2, topic:"Probability"},
+      {q:"A newborn baby will be a girl. This event is:", opts:["Certain","Impossible","Possible","None of these"], ans:2, topic:"Probability"},
+      {q:"A fair die is rolled. What is P(rolling a factor of 6)? Factors: 1,2,3,6", opts:["2/6","4/6","3/6","5/6"], ans:1, topic:"Probability"},
+      {q:"If P(A) = 3/4, what is the probability of A NOT occurring?", opts:["3/4","1/4","1/2","4/3"], ans:1, topic:"Probability"},
+      {q:"If a fair die is rolled, what is P(getting a 7)?", opts:["1/6","0","1/7","1"], ans:1, topic:"Probability"},
+      {q:"A bag has 5 red and 3 blue balls. P(picking blue) =", opts:["5/8","1/8","3/8","3/5"], ans:2, topic:"Probability"},
+      {q:"A coin is tossed twice. How many outcomes are in the sample space?", opts:["2","3","4","6"], ans:2, topic:"Probability"},
+      {q:"P(getting Heads on both tosses when a coin is tossed twice) =", opts:["1/2","1/3","1/4","2/4"], ans:2, topic:"Probability"},
+      {q:"The probability of picking an even number from {1,2,3,4,5,6} is:", opts:["1/6","2/6","3/6","4/6"], ans:2, topic:"Probability"},
+      // SUBJECTIVES CONVERTED (20) — from theory Q1-Q5
+      {q:"A library floor is n metres long. The width is 3 m less than the length. Write an expression for the width.", opts:["n + 3","n minus 3","3 minus n","3n"], ans:1, topic:"Subjectives"},
+      {q:"If n = 8 m and the width is (n minus 3), what is the perimeter of the rectangular library floor?", opts:["26 m","30 m","34 m","38 m"], ans:1, topic:"Subjectives"},
+      {q:"3/5 of bags of cement were used for a foundation. What fraction of the bags remain?", opts:["3/5","1/5","2/5","4/5"], ans:2, topic:"Subjectives"},
+      {q:"A truck moves using vector (6 top, 8 bottom). The magnitude (distance) of this movement is:", opts:["14","10","48","Square root of 28"], ans:1, topic:"Subjectives"},
+      {q:"A water tank has a diameter of 14 m. Using pi = 22/7, its circumference is:", opts:["22 m","44 m","88 m","154 m"], ans:1, topic:"Subjectives"},
+      {q:"A project manager has a bag with 4 green and 6 white helmets. P(picking green) =", opts:["4/6","6/10","4/10","6/4"], ans:2, topic:"Subjectives"},
+      {q:"Translate into algebra: 2 more than 5 times a number p.", opts:["2p + 5","5p + 2","5 + p + 2","7p"], ans:1, topic:"Subjectives"},
+      {q:"Translate into algebra: Half of the sum of x and y.", opts:["x + y/2","(x + y)/2","2(x + y)","x/2 + y"], ans:1, topic:"Subjectives"},
+      {q:"Simplify: 3a + 2b minus a + 4b minus 5a + b.", opts:["minus 3a + 7b","3a minus 7b","minus 3a minus 7b","7a + 7b"], ans:0, topic:"Subjectives"},
+      {q:"If p = 3 and q = minus 2, evaluate p squared divided by q.", opts:["minus 4.5","4.5","minus 9/2","minus 2"], ans:0, topic:"Subjectives"},
+      {q:"Expand: 2(3x + 1) minus (x minus 4).", opts:["5x + 6","7x + 6","5x minus 2","7x + 2"], ans:0, topic:"Subjectives"},
+      {q:"A right-angled triangle has shorter sides of 5 cm and 12 cm. The hypotenuse is:", opts:["13 cm","11 cm","17 cm","15 cm"], ans:0, topic:"Subjectives"},
+      {q:"Using Pythagoras, find the missing side if the hypotenuse is 10 cm and one side is 6 cm.", opts:["4 cm","8 cm","16 cm","Square root of 64 cm"], ans:1, topic:"Subjectives"},
+      {q:"Write the movement 4 units right and 2 units up as a column vector.", opts:["(2 top, 4 bottom)","(4 top, 2 bottom)","(4 top, minus 2 bottom)","(minus 4 top, 2 bottom)"], ans:1, topic:"Subjectives"},
+      {q:"The day after Friday is Saturday. This is:", opts:["Possible","Impossible","Unlikely","Certain"], ans:3, topic:"Subjectives"},
+      {q:"From a bag of 12 marbles: 5 red, 4 blue, 3 green. P(NOT red) =", opts:["5/12","7/12","4/12","3/12"], ans:1, topic:"Subjectives"},
+      {q:"A fair die is rolled. What is P(rolling a prime number)? Primes on a die: 2, 3, 5", opts:["2/6","3/6","4/6","1/6"], ans:1, topic:"Subjectives"},
+      {q:"If P(event) = 3/8, express this probability as a percentage.", opts:["3.8%","37.5%","38%","30%"], ans:1, topic:"Subjectives"},
+      {q:"The probability of an event NOT occurring if P(event) = 0.4 is:", opts:["0.4","0.04","0.6","1.4"], ans:2, topic:"Subjectives"},
+      {q:"A coin is tossed twice. List: {HH, HT, TH, TT}. P(getting at least one Tail) =", opts:["1/4","1/2","3/4","1"], ans:2, topic:"Subjectives"}
+    ],
+    2: [
+      // NUMBERS (10) — Trial 2: different values throughout
+      {q:"Which fraction is equivalent to 2/3?", opts:["4/9","6/9","3/6","8/9"], ans:1, topic:"Numbers"},
+      {q:"Express 0.4 as a fraction in its simplest form.", opts:["4/10","40/100","2/5","4/5"], ans:2, topic:"Numbers"},
+      {q:"A stack of books weighs 6 kg. Each book weighs 300 g. How many books are there?", opts:["18","20","2","25"], ans:1, topic:"Numbers"},
+      {q:"Convert 3 and 1/2 to an improper fraction.", opts:["6/2","7/2","5/2","8/2"], ans:1, topic:"Numbers"},
+      {q:"Simplify the ratio 15:10 to its simplest whole number form.", opts:["5:3","3:2","15:10","6:4"], ans:1, topic:"Numbers"},
+      {q:"A class of 40 learners shares 20 litres of juice equally. How many millilitres does each get?", opts:["200 ml","500 ml","400 ml","250 ml"], ans:1, topic:"Numbers"},
+      {q:"Share 30 sweets in the ratio 2:3. What is the larger share?", opts:["10","12","15","18"], ans:3, topic:"Numbers"},
+      {q:"Express 2/5 as a percentage.", opts:["20%","25%","40%","50%"], ans:2, topic:"Numbers"},
+      {q:"Arrange in ascending order: 5/6, 1/3, 2/3, 1/6.", opts:["1/6, 1/3, 2/3, 5/6","5/6, 2/3, 1/3, 1/6","1/3, 1/6, 5/6, 2/3","2/3, 1/3, 1/6, 5/6"], ans:0, topic:"Numbers"},
+      {q:"Find 3/5 of 30.", opts:["9","12","15","18"], ans:3, topic:"Numbers"},
+      // ALGEBRA (10) — Trial 2
+      {q:"6 added to the product of 3 and n is written as:", opts:["3n + 6","6n + 3","3 + 6n","n + 9"], ans:0, topic:"Algebra"},
+      {q:"The difference of 7 and twice p is written as:", opts:["7 minus 2p","2p minus 7","7p minus 2","2 times (7 minus p)"], ans:0, topic:"Algebra"},
+      {q:"Simplify: 5m + 3n minus 2m + n.", opts:["3m + 4n","7m + 2n","3m + 2n","5m + 4n"], ans:0, topic:"Algebra"},
+      {q:"Simplify: 6b squared minus 2b + b squared minus 3b.", opts:["7b squared minus 5b","5b squared minus 5b","7b squared + 5b","5b squared + 5b"], ans:0, topic:"Algebra"},
+      {q:"Solve for x: 4x minus 3 = 13.", opts:["4","5","10","16"], ans:0, topic:"Algebra"},
+      {q:"Expand: 4(3y minus 2).", opts:["12y minus 2","12y minus 8","7y minus 6","4y minus 8"], ans:1, topic:"Algebra"},
+      {q:"3 less than twice the sum of a and b as an expression:", opts:["2(a + b) minus 3","2a + b minus 3","3 minus 2(a + b)","2ab minus 3"], ans:0, topic:"Algebra"},
+      {q:"Simplify: 2(4x + 1) minus 3(x minus 2).", opts:["5x + 8","11x minus 4","5x minus 4","5x + 4"], ans:0, topic:"Algebra"},
+      {q:"Evaluate 3x minus y squared if x = 5 and y = 3.", opts:["6","9","15","24"], ans:0, topic:"Algebra"},
+      {q:"Simplify: (2/3) multiplied by (3/4).", opts:["6/12","1/2","5/7","2/4"], ans:1, topic:"Algebra"},
+      // GEOMETRY (10) — Trial 2
+      {q:"A square has a side of 9 cm. Find its perimeter.", opts:["18 cm","27 cm","36 cm","81 cm"], ans:2, topic:"Geometry"},
+      {q:"A right-angled triangle has legs 5 cm and 12 cm. What is the hypotenuse?", opts:["11 cm","13 cm","15 cm","17 cm"], ans:1, topic:"Geometry"},
+      {q:"A circle has a radius of 14 cm. Find its circumference. (pi = 22/7)", opts:["44 cm","88 cm","154 cm","308 cm"], ans:1, topic:"Geometry"},
+      {q:"Convert 450 cm into metres.", opts:["0.45 m","4.5 m","45 m","4500 m"], ans:1, topic:"Geometry"},
+      {q:"The area of a rectangle with length 9 cm and width 6 cm is:", opts:["30 cm squared","54 cm squared","15 cm squared","45 cm squared"], ans:1, topic:"Geometry"},
+      {q:"A circular pond has a diameter of 7 m. What is its circumference? (pi = 22/7)", opts:["11 m","22 m","44 m","154 m"], ans:1, topic:"Geometry"},
+      {q:"A vector has horizontal component 3 and vertical component 4. What is its magnitude?", opts:["7","5","Square root of 7","12"], ans:1, topic:"Geometry"},
+      {q:"A circle has a diameter of 10 cm. Find its radius.", opts:["20 cm","10 cm","5 cm","2.5 cm"], ans:2, topic:"Geometry"},
+      {q:"In a column vector with top value 3 and bottom value 4, what is the vertical component?", opts:["3","4","7","1"], ans:1, topic:"Geometry"},
+      {q:"Find the area of a circle with radius 21 cm. (pi = 22/7)", opts:["66 cm squared","132 cm squared","1386 cm squared","462 cm squared"], ans:2, topic:"Geometry"},
+      // PROBABILITY (10) — Trial 2
+      {q:"The sun will rise tomorrow. This event is:", opts:["Impossible","Possible","Certain","Unlikely"], ans:2, topic:"Probability"},
+      {q:"Rolling a total of 1 on two standard dice is:", opts:["Certain","Possible","Impossible","Likely"], ans:2, topic:"Probability"},
+      {q:"It will rain sometime this year in Ghana. This event is:", opts:["Impossible","Uncertain","Possible","Certain"], ans:3, topic:"Probability"},
+      {q:"A fair die is rolled. What is P(prime number)? Primes on a die: 2, 3, 5", opts:["2/6","3/6","4/6","1/6"], ans:1, topic:"Probability"},
+      {q:"If P(B) = 2/5, what is P(B NOT occurring)?", opts:["2/5","1/5","3/5","4/5"], ans:2, topic:"Probability"},
+      {q:"If a fair die is rolled, what is P(getting a 1)?", opts:["1/6","0","1","6"], ans:0, topic:"Probability"},
+      {q:"A bag has 4 red and 3 blue balls. P(red) =", opts:["3/7","4/3","4/7","1/7"], ans:2, topic:"Probability"},
+      {q:"A coin is tossed three times. How many outcomes are in the sample space?", opts:["3","6","8","9"], ans:2, topic:"Probability"},
+      {q:"From the sample space {HH, HT, TH, TT}, what is P(exactly one Head)?", opts:["1/4","1/2","3/4","2/3"], ans:1, topic:"Probability"},
+      {q:"The probability of picking an odd number from {1,2,3,4,5,6} is:", opts:["1/6","2/6","3/6","4/6"], ans:2, topic:"Probability"},
+      // SUBJECTIVES CONVERTED (20) — Trial 2: different scenarios from theory
+      {q:"A library floor is m metres long. Its width is 5 m less than its length. If m = 11 m, what is the width?", opts:["5 m","6 m","16 m","55 m"], ans:1, topic:"Subjectives"},
+      {q:"If the library length is 11 m and width is 6 m, what is the perimeter of the floor?", opts:["30 m","34 m","66 m","17 m"], ans:1, topic:"Subjectives"},
+      {q:"2/5 of bags were used. What fraction remains?", opts:["2/5","1/5","3/5","4/5"], ans:2, topic:"Subjectives"},
+      {q:"A truck moves with column vector (3 top, 4 bottom). What is its magnitude?", opts:["7","5","12","Square root of 7"], ans:1, topic:"Subjectives"},
+      {q:"A circular tank has a diameter of 7 m. Using pi = 22/7, its circumference is:", opts:["11 m","22 m","44 m","154 m"], ans:1, topic:"Subjectives"},
+      {q:"A bag has 3 green and 7 white helmets. P(picking white) =", opts:["3/10","7/3","7/10","3/7"], ans:2, topic:"Subjectives"},
+      {q:"Translate: 5 less than three times a number k.", opts:["5k minus 3","3k minus 5","3 minus 5k","5 minus 3k"], ans:1, topic:"Subjectives"},
+      {q:"Translate: One-quarter of the sum of a and b.", opts:["a + b/4","4(a + b)","(a + b)/4","a/4 + b"], ans:2, topic:"Subjectives"},
+      {q:"Simplify: 4x + 3y minus 2x minus 5y + x.", opts:["3x minus 2y","5x minus 2y","3x + 8y","7x minus 2y"], ans:0, topic:"Subjectives"},
+      {q:"If a = 4 and b = minus 1, evaluate 2a squared + 3b.", opts:["29","35","29","13"], ans:0, topic:"Subjectives"},
+      {q:"Expand and simplify: 4(2x minus 3) minus 2(x + 1).", opts:["6x minus 14","8x minus 14","6x minus 10","6x + 14"], ans:0, topic:"Subjectives"},
+      {q:"A right-angled triangle has a hypotenuse of 17 cm and one leg of 8 cm. Find the other leg.", opts:["9 cm","15 cm","25 cm","Square root of 225 cm"], ans:1, topic:"Subjectives"},
+      {q:"Using Pythagoras, the hypotenuse of a triangle with legs 9 cm and 12 cm is:", opts:["21 cm","15 cm","3 cm","225 cm"], ans:1, topic:"Subjectives"},
+      {q:"A vector shows 5 units right and 0 units up or down. Write it as a column vector.", opts:["(0 top, 5 bottom)","(5 top, 5 bottom)","(5 top, 0 bottom)","(minus 5 top, 0 bottom)"], ans:2, topic:"Subjectives"},
+      {q:"Christmas Day always falls on 25th December. This is:", opts:["Possible","Impossible","Unlikely","Certain"], ans:3, topic:"Subjectives"},
+      {q:"From a bag of 15 balls: 6 red, 5 blue, 4 yellow. P(blue) =", opts:["6/15","5/15","4/15","1/3"], ans:1, topic:"Subjectives"},
+      {q:"A fair die is rolled. P(rolling a number greater than 4) =", opts:["4/6","3/6","2/6","1/6"], ans:2, topic:"Subjectives"},
+      {q:"If P(event) = 1/4, express the probability of the event NOT occurring as a fraction.", opts:["1/4","1/2","3/4","1"], ans:2, topic:"Subjectives"},
+      {q:"If P(event) = 0.3, the probability of the event occurring as a percentage is:", opts:["3%","0.3%","30%","300%"], ans:2, topic:"Subjectives"},
+      {q:"A coin is tossed twice. P(getting exactly two Heads) =", opts:["1/2","1/3","1/4","2/3"], ans:2, topic:"Subjectives"}
+    ],
+    3: [
+      // NUMBERS (10) — Trial 3
+      {q:"Which fraction is equivalent to 3/5?", opts:["6/15","9/15","12/20","6/8"], ans:1, topic:"Numbers"},
+      {q:"Express 0.6 as a fraction in its simplest form.", opts:["6/10","60/100","3/5","6/5"], ans:2, topic:"Numbers"},
+      {q:"A tray of tiles weighs 7.5 kg. Each tile weighs 250 g. How many tiles are there?", opts:["20","25","30","35"], ans:2, topic:"Numbers"},
+      {q:"Convert 1 and 2/3 to an improper fraction.", opts:["4/3","5/3","7/3","2/3"], ans:1, topic:"Numbers"},
+      {q:"Simplify the ratio 20:8 to its simplest whole number form.", opts:["10:4","4:10","5:2","2:5"], ans:2, topic:"Numbers"},
+      {q:"25 learners share 12.5 litres of juice equally. How many millilitres does each get?", opts:["250 ml","500 ml","400 ml","125 ml"], ans:1, topic:"Numbers"},
+      {q:"Share 48 items in the ratio 1:3. What is the larger share?", opts:["12","16","24","36"], ans:3, topic:"Numbers"},
+      {q:"Express 7/20 as a percentage.", opts:["14%","25%","35%","70%"], ans:2, topic:"Numbers"},
+      {q:"Arrange in ascending order: 3/5, 1/5, 4/5, 2/5.", opts:["1/5, 2/5, 3/5, 4/5","4/5, 3/5, 2/5, 1/5","2/5, 1/5, 3/5, 4/5","3/5, 1/5, 2/5, 4/5"], ans:0, topic:"Numbers"},
+      {q:"Find 5/6 of 24.", opts:["15","16","18","20"], ans:3, topic:"Numbers"},
+      // ALGEBRA (10) — Trial 3
+      {q:"The product of 4 and n, minus 3 is written as:", opts:["4 minus 3n","4n minus 3","3n minus 4","n minus 12"], ans:1, topic:"Algebra"},
+      {q:"One-third of the difference of x and 6 as an expression:", opts:["(x minus 6) divided by 3","x divided by 3 minus 6","3(x minus 6)","x minus 6 divided by 3"], ans:0, topic:"Algebra"},
+      {q:"Simplify: 7p + 2q minus 3p minus q.", opts:["4p + q","4p + 3q","10p + q","10p + 3q"], ans:0, topic:"Algebra"},
+      {q:"Simplify: 5c squared + 4c minus 2c squared + c.", opts:["3c squared + 5c","7c squared + 3c","3c squared + 3c","7c squared + 5c"], ans:0, topic:"Algebra"},
+      {q:"Solve for x: 5x + 2 = 17.", opts:["3","15","19","4"], ans:0, topic:"Algebra"},
+      {q:"Expand: 2(5 minus 3y).", opts:["10 minus 3y","10 minus 6y","7 minus 6y","10 + 6y"], ans:1, topic:"Algebra"},
+      {q:"4 more than three times the sum of m and n as an expression:", opts:["3m + n + 4","3(m + n) + 4","4(m + n) + 3","m + n + 12"], ans:1, topic:"Algebra"},
+      {q:"Simplify: 3(2a minus 4) + 2(a + 5).", opts:["8a minus 2","8a + 2","6a minus 2","4a minus 2"], ans:0, topic:"Algebra"},
+      {q:"Evaluate (x + y) squared if x = 3 and y = 2.", opts:["10","25","13","5"], ans:1, topic:"Algebra"},
+      {q:"Simplify: (5/6) divided by (5/12).", opts:["25/72","2","1/2","10/6"], ans:1, topic:"Algebra"},
+      // GEOMETRY (10) — Trial 3
+      {q:"A square has a side of 12 cm. Find its perimeter.", opts:["24 cm","36 cm","48 cm","144 cm"], ans:2, topic:"Geometry"},
+      {q:"A right-angled triangle has legs 8 cm and 15 cm. What is the hypotenuse?", opts:["16 cm","17 cm","18 cm","23 cm"], ans:1, topic:"Geometry"},
+      {q:"A circle has a radius of 21 cm. Find its circumference. (pi = 22/7)", opts:["66 cm","132 cm","33 cm","154 cm"], ans:1, topic:"Geometry"},
+      {q:"Convert 2.5 km into metres.", opts:["25 m","250 m","2500 m","25000 m"], ans:2, topic:"Geometry"},
+      {q:"The area of a rectangle with length 12 cm and width 4 cm is:", opts:["32 cm squared","48 cm squared","16 cm squared","24 cm squared"], ans:1, topic:"Geometry"},
+      {q:"A circular swimming pool has a diameter of 28 m. What is its circumference? (pi = 22/7)", opts:["44 m","88 m","176 m","154 m"], ans:1, topic:"Geometry"},
+      {q:"A vector has horizontal component 5 and vertical component 12. What is its magnitude?", opts:["17","13","15","60"], ans:1, topic:"Geometry"},
+      {q:"A circle has a radius of 3.5 cm. Find its diameter.", opts:["1.75 cm","3.5 cm","7 cm","10.5 cm"], ans:2, topic:"Geometry"},
+      {q:"In a column vector with top value negative 2 and bottom value 5, what is the horizontal component?", opts:["5","negative 5","negative 2","2"], ans:2, topic:"Geometry"},
+      {q:"Find the area of a semi-circle with radius 7 cm. (pi = 22/7)", opts:["154 cm squared","77 cm squared","44 cm squared","38.5 cm squared"], ans:1, topic:"Geometry"},
+      // PROBABILITY (10) — Trial 3
+      {q:"Water freezing at 0 degrees Celsius when the temperature is exactly 0 degrees Celsius is:", opts:["Impossible","Possible","Certain","Unlikely"], ans:2, topic:"Probability"},
+      {q:"A student chosen at random from a mixed class being a boy is:", opts:["Certain","Impossible","Possible","Always true"], ans:2, topic:"Probability"},
+      {q:"Picking a black card from a deck of only red cards is:", opts:["Possible","Likely","Certain","Impossible"], ans:3, topic:"Probability"},
+      {q:"A fair die is rolled. What is P(factor of 12)? Factors of 12 on a die: 1,2,3,4,6", opts:["3/6","4/6","5/6","2/6"], ans:2, topic:"Probability"},
+      {q:"If P(C) = 1/3, what is P(C NOT occurring)?", opts:["1/3","2/3","3/2","1"], ans:1, topic:"Probability"},
+      {q:"If a fair die is rolled, what is P(getting a 6)?", opts:["0","1","1/6","6"], ans:2, topic:"Probability"},
+      {q:"A bag has 6 red and 2 white balls. P(white) =", opts:["6/8","3/4","2/8","1/8"], ans:2, topic:"Probability"},
+      {q:"A coin is tossed twice. From {HH, HT, TH, TT}, P(no Heads at all) =", opts:["1/2","1/3","1/4","2/4"], ans:2, topic:"Probability"},
+      {q:"The probability of picking a multiple of 3 from {1,2,3,4,5,6} is:", opts:["1/6","2/6","3/6","4/6"], ans:1, topic:"Probability"},
+      {q:"If P(event) = 0.7, the probability of it NOT occurring as a decimal is:", opts:["0.7","0.3","0.07","7"], ans:1, topic:"Probability"},
+      // SUBJECTIVES CONVERTED (20) — Trial 3: different values/scenarios again
+      {q:"A library floor is k metres long. Its width is 4 m less than its length. If k = 9 m, what is the width?", opts:["4 m","5 m","13 m","36 m"], ans:1, topic:"Subjectives"},
+      {q:"If the library length is 9 m and width is 5 m, what is the perimeter of the floor?", opts:["28 m","45 m","14 m","18 m"], ans:0, topic:"Subjectives"},
+      {q:"1/4 of bags of cement were used. What fraction remains?", opts:["1/4","2/4","3/4","4/4"], ans:2, topic:"Subjectives"},
+      {q:"A truck moves with column vector (5 top, 12 bottom). What is its magnitude?", opts:["17","13","60","7"], ans:1, topic:"Subjectives"},
+      {q:"A circular tank has a diameter of 21 m. Using pi = 22/7, its circumference is:", opts:["33 m","66 m","132 m","154 m"], ans:1, topic:"Subjectives"},
+      {q:"A bag has 5 green and 5 white helmets. P(picking green) =", opts:["5/10","1/5","5/5","1/3"], ans:0, topic:"Subjectives"},
+      {q:"Translate: 10 more than twice a number y.", opts:["10y + 2","2y + 10","y + 12","2 + 10y"], ans:1, topic:"Subjectives"},
+      {q:"Translate: One-fifth of the product of p and q.", opts:["pq/5","5pq","p + q/5","p/5 times q"], ans:0, topic:"Subjectives"},
+      {q:"Simplify: 6m + 2n minus 4m minus n + m.", opts:["3m + n","3m + 3n","7m + n","m + n"], ans:0, topic:"Subjectives"},
+      {q:"If x = minus 2 and y = 3, evaluate 3x squared minus 2y.", opts:["6","12","18","minus 6"], ans:0, topic:"Subjectives"},
+      {q:"Expand and simplify: 3(x + 4) minus 2(2x minus 1).", opts:["minus x + 14","minus x + 10","x + 14","7x + 14"], ans:0, topic:"Subjectives"},
+      {q:"A right-angled triangle has a hypotenuse of 26 cm and one leg of 10 cm. Find the other leg.", opts:["16 cm","24 cm","36 cm","20 cm"], ans:1, topic:"Subjectives"},
+      {q:"Using Pythagoras, the hypotenuse of a triangle with legs 6 cm and 8 cm is:", opts:["14 cm","10 cm","100 cm","48 cm"], ans:1, topic:"Subjectives"},
+      {q:"A vector shows 0 units horizontally and 7 units up. Write it as a column vector.", opts:["(7 top, 0 bottom)","(0 top, 7 bottom)","(7 top, 7 bottom)","(minus 7 top, 0 bottom)"], ans:1, topic:"Subjectives"},
+      {q:"Tomorrow being a school day if today is Sunday is:", opts:["Impossible","Unlikely","Possible","Certain"], ans:3, topic:"Subjectives"},
+      {q:"From a bag of 20 balls: 8 red, 7 blue, 5 green. P(green) =", opts:["8/20","7/20","5/20","1/4"], ans:2, topic:"Subjectives"},
+      {q:"A fair die is rolled. P(rolling a number less than 3) =", opts:["3/6","2/6","1/6","4/6"], ans:1, topic:"Subjectives"},
+      {q:"If P(event) = 5/8, express the probability of the event NOT occurring as a fraction.", opts:["5/8","3/8","1/8","7/8"], ans:1, topic:"Subjectives"},
+      {q:"If P(event) = 0.65, express this as a percentage.", opts:["6.5%","0.65%","650%","65%"], ans:3, topic:"Subjectives"},
+      {q:"A coin is tossed twice. P(getting at least one Head) =", opts:["1/4","1/2","3/4","1"], ans:2, topic:"Subjectives"}
+    ]
+  },
+  basic8: {
+    1: [
+      // NUMBERS (10) — from objectives
+      {q:"Which of the following is equivalent to 2/3?", opts:["4/9","6/9","4/5","8/15"], ans:1, topic:"Numbers"},
+      {q:"Express 12/5 as a mixed number.", opts:["2 and 1/5","2 and 2/5","1 and 2/5","5 and 2/5"], ans:1, topic:"Numbers"},
+      {q:"Simplify using order of operations: 18 divided by 6 times (4 minus 3) plus 6.", opts:["7","9","12","3"], ans:1, topic:"Numbers"},
+      {q:"Evaluate: 3/4 + 5/8.", opts:["8/12","1 and 2/8","11/8","1 and 3/8"], ans:3, topic:"Numbers"},
+      {q:"Express 0.75 as a percentage.", opts:["7.5%","75%","0.75%","750%"], ans:1, topic:"Numbers"},
+      {q:"Evaluate 3 squared + 2 cubed.", opts:["12","17","13","10"], ans:1, topic:"Numbers"},
+      {q:"Express 2 and 5/9 as an improper fraction.", opts:["10/9","23/9","18/9","25/9"], ans:1, topic:"Numbers"},
+      {q:"Simplify 6/10 to its simplest form.", opts:["1/2","3/5","2/3","4/5"], ans:1, topic:"Numbers"},
+      {q:"What is 20% of 50?", opts:["5","10","20","15"], ans:1, topic:"Numbers"},
+      {q:"A worker spends 1/3 of salary on food and 2/5 on rent. What fraction is left?", opts:["3/15","4/15","7/15","8/15"], ans:3, topic:"Numbers"},
+      // ALGEBRA (10) — from objectives
+      {q:"Expansion of 6(x + 3) gives:", opts:["6x + 3","6x + 18","x + 18","18x"], ans:1, topic:"Algebra"},
+      {q:"Simplify 3(x + 4) minus 2(x minus 5).", opts:["x + 2","x + 22","x minus 2","5x + 22"], ans:1, topic:"Algebra"},
+      {q:"If x = 2 and y = minus 2, find the value of x + y.", opts:["4","minus 4","0","2"], ans:2, topic:"Algebra"},
+      {q:"Multiply (a + 2)(a + 3).", opts:["a squared + 6","a squared + 5a + 6","2a + 5","a squared + 5a + 5"], ans:1, topic:"Algebra"},
+      {q:"Factorize 6x + 12.", opts:["6(x + 2)","x(6 + 12)","12(x + 6)","6(x + 12)"], ans:0, topic:"Algebra"},
+      {q:"Expand (2x + 3) squared.", opts:["4x squared + 9","4x squared + 6x + 9","4x squared + 12x + 9","2x squared + 12x + 6"], ans:2, topic:"Algebra"},
+      {q:"Simplify 2x/6 + x/3.", opts:["3x/9","2x/3","x","x/2"], ans:1, topic:"Algebra"},
+      {q:"Expand minus 5x(3x + 4).", opts:["minus 15x squared minus 20x","minus 15x minus 20x","15x squared + 20x","minus 15x squared + 20x"], ans:0, topic:"Algebra"},
+      {q:"Expand 3(x minus 4) minus 2(x minus 5) and simplify.", opts:["x minus 2","x + 2","5x minus 22","x minus 22"], ans:0, topic:"Algebra"},
+      {q:"Multiply the binomials (2x + 3) and (2x minus 3).", opts:["4x squared minus 9","4x squared + 9","4x squared minus 6x minus 9","4x squared + 12x + 9"], ans:0, topic:"Algebra"},
+      // GEOMETRY (10) — from objectives
+      {q:"Find the area of a circle with radius 7 cm. (pi = 22/7)", opts:["44 cm squared","154 cm squared","49 cm squared","14 cm squared"], ans:1, topic:"Geometry"},
+      {q:"In a right-angled triangle with shorter sides 3 cm and 4 cm, the hypotenuse is:", opts:["5 cm","7 cm","25 cm","12 cm"], ans:0, topic:"Geometry"},
+      {q:"Vectors a = (3, 5) and b = (7, 2). Find a + b.", opts:["(10, 7)","(4, 3)","(10, 3)","(7, 10)"], ans:0, topic:"Geometry"},
+      {q:"In trigonometry, TOA stands for:", opts:["tan = Opp/Adj","tan = Adj/Opp","tan = Opp/Hyp","tan = Adj/Hyp"], ans:0, topic:"Geometry"},
+      {q:"The area of a circle formula is:", opts:["2 pi r","pi d","pi r squared","l times w"], ans:2, topic:"Geometry"},
+      {q:"In the vector (x, y) written as a column, x represents:", opts:["Vertical shift","Gradient","Horizontal shift","Scalar"], ans:2, topic:"Geometry"},
+      {q:"If the diameter of a circle is 14 cm, the radius is:", opts:["28 cm","7 cm","44 cm","22 cm"], ans:1, topic:"Geometry"},
+      {q:"Find the area of a semi-circle with radius 7 cm. (pi = 22/7)", opts:["154 cm squared","77 cm squared","44 cm squared","38.5 cm squared"], ans:1, topic:"Geometry"},
+      {q:"A ladder 13 m long leans against a wall. The foot is 5 m from the wall. How high does it reach?", opts:["8 m","10 m","12 m","18 m"], ans:2, topic:"Geometry"},
+      {q:"Find 3 times the vector (3, 2) written as a column.", opts:["(5, 6)","(6, 3)","(9, 6)","(2, 9)"], ans:2, topic:"Geometry"},
+      // PROBABILITY (10) — from objectives
+      {q:"A bag contains 3 red and 2 green balls. P(red) =", opts:["2/4","1/3","3/5","3/2"], ans:2, topic:"Probability"},
+      {q:"Tossing a fair coin twice, the sample space size is:", opts:["2","4","6","8"], ans:1, topic:"Probability"},
+      {q:"If the probability of passing an exam is 0.75, P(failing) as a fraction is:", opts:["3/4","1/4","1/2","3/8"], ans:1, topic:"Probability"},
+      {q:"Find the probability of scoring a 6 on a fair six-sided die.", opts:["1","1/6","5/6","0"], ans:1, topic:"Probability"},
+      {q:"The probability of an impossible event is:", opts:["1","0.5","0","minus 1"], ans:2, topic:"Probability"},
+      {q:"The sum of probabilities of all possible outcomes is:", opts:["0","0.5","1","100"], ans:2, topic:"Probability"},
+      {q:"A coin is tossed and a die is thrown. These events are:", opts:["Dependent","Independent","Mutually exclusive","Impossible"], ans:1, topic:"Probability"},
+      {q:"A fair die is thrown. P(number greater than 2) =", opts:["2/6","3/6","4/6","5/6"], ans:2, topic:"Probability"},
+      {q:"A bag has 4 red, 3 blue, and 3 yellow markers. P(NOT blue) =", opts:["3/10","7/10","4/10","6/10"], ans:1, topic:"Probability"},
+      {q:"If 3/5 of a floor is carpeted, what fraction is tiled?", opts:["3/5","1/5","2/5","4/5"], ans:2, topic:"Probability"},
+      // SUBJECTIVES CONVERTED (20) — from theory Q1-Q5
+      {q:"A circular youth center has a diameter of 28 m. Using pi = 22/7, find the area of land it covers.", opts:["88 m squared","616 m squared","308 m squared","154 m squared"], ans:1, topic:"Subjectives"},
+      {q:"A rectangular stage has length 12 m and width w. Write an expression for its perimeter.", opts:["12 + w","2(12 + w)","12w","12 times 2 + w"], ans:1, topic:"Subjectives"},
+      {q:"If the stage width w = 5 m and length is 12 m, what is the perimeter of the stage?", opts:["17 m","34 m","60 m","24 m"], ans:1, topic:"Subjectives"},
+      {q:"A technician moves using vector (4, 2) then (2, 3). Find the total displacement vector.", opts:["(6, 5)","(2, 1)","(8, 6)","(6, 1)"], ans:0, topic:"Subjectives"},
+      {q:"A bag has 4 red, 3 blue, and 3 yellow markers. P(picking blue) =", opts:["4/10","7/10","3/10","6/10"], ans:2, topic:"Subjectives"},
+      {q:"If 3/5 of a floor is carpeted, what fraction is tiled? (Same concept, different wording)", opts:["2/5","1/5","3/5","4/5"], ans:0, topic:"Subjectives"},
+      {q:"A worker spends 1/3 on food and 2/5 on rent. What fraction of salary is left? (Show your working step: 1 minus 1/3 minus 2/5 = ?)", opts:["4/15","7/15","8/15","2/15"], ans:2, topic:"Subjectives"},
+      {q:"Express 2 and 5/9 as an improper fraction. (2 times 9 + 5 = ?)", opts:["14/9","19/9","23/9","25/9"], ans:2, topic:"Subjectives"},
+      {q:"Express 0.625 as a fraction in its simplest form.", opts:["625/1000","5/8","6/10","62/100"], ans:1, topic:"Subjectives"},
+      {q:"Simplify: 3(x minus 4) minus 2(x minus 5). The simplified answer is:", opts:["x + 2","x minus 2","5x minus 22","5x + 2"], ans:0, topic:"Subjectives"},
+      {q:"Multiply (2x + 3)(2x minus 3). The result using difference of two squares is:", opts:["4x squared + 9","4x squared minus 9","4x squared minus 6","2x squared minus 9"], ans:1, topic:"Subjectives"},
+      {q:"If x = 2 and y = minus 2, evaluate (6x squared + 2xy) divided by 4.", opts:["3","4","5","6"], ans:2, topic:"Subjectives"},
+      {q:"A ladder 13 m leans against a wall, foot 5 m from the wall. How high does it reach? (Use Pythagoras)", opts:["8 m","10 m","12 m","18 m"], ans:2, topic:"Subjectives"},
+      {q:"Calculate the area of a semi-circle with radius 14 cm. (pi = 22/7)", opts:["308 cm squared","616 cm squared","154 cm squared","88 cm squared"], ans:0, topic:"Subjectives"},
+      {q:"Vectors u = (minus 1, 2) and v = (4, 3). Find 2u + 3v.", opts:["(10, 13)","(minus 2, 4)","(12, 9)","(10, 5)"], ans:0, topic:"Subjectives"},
+      {q:"A box has 3 blue and 4 pink pens. A pen is picked with replacement and another picked. P(two blue) =", opts:["3/7 times 3/7","3/7 times 4/7","4/7 times 4/7","1/2 times 1/2"], ans:0, topic:"Subjectives"},
+      {q:"Using the same box of 3 blue and 4 pink pens (with replacement), P(both pens same colour) =", opts:["9/49","16/49","25/49","24/49"], ans:2, topic:"Subjectives"},
+      {q:"If the probability of a student passing is 0.75, P(failing) expressed as a fraction in simplest form is:", opts:["3/4","1/4","75/100","25/100"], ans:1, topic:"Subjectives"},
+      {q:"Simplify the algebraic fraction: (a + b)/3 minus (a minus b)/2. The answer is:", opts:["(minus a + 5b)/6","(a + 5b)/6","(5b minus a)/6","(a minus 5b)/6"], ans:2, topic:"Subjectives"},
+      {q:"A fair die is thrown. List the sample space and identify P(number greater than 2).", opts:["2/6","3/6","4/6","5/6"], ans:2, topic:"Subjectives"}
+    ],
+    2: [
+      // NUMBERS (10) — Trial 2
+      {q:"Which of the following is equivalent to 3/4?", opts:["6/10","9/12","6/8","15/24"], ans:1, topic:"Numbers"},
+      {q:"Express 17/4 as a mixed number.", opts:["4 and 1/4","4 and 3/4","3 and 1/4","4 and 2/4"], ans:0, topic:"Numbers"},
+      {q:"Simplify using order of operations: 24 divided by 4 + (3 times 2) minus 5.", opts:["5","7","9","11"], ans:1, topic:"Numbers"},
+      {q:"Faako answered 42 out of 60 questions correctly. What percentage did she get WRONG?", opts:["42%","30%","70%","60%"], ans:1, topic:"Numbers"},
+      {q:"Express 0.85 as a fraction in its simplest form.", opts:["85/100","17/20","8/5","8/10"], ans:1, topic:"Numbers"},
+      {q:"Evaluate 2 cubed + 4 squared.", opts:["24","10","12","28"], ans:0, topic:"Numbers"},
+      {q:"A worker spends 1/4 of salary on food and 1/3 on transport. What fraction is left?", opts:["5/12","7/12","1/12","3/12"], ans:1, topic:"Numbers"},
+      {q:"Express 3 and 2/7 as an improper fraction.", opts:["6/7","23/7","9/7","21/7"], ans:1, topic:"Numbers"},
+      {q:"Simplify 4/6 to its simplest form.", opts:["1/3","2/3","4/3","3/4"], ans:1, topic:"Numbers"},
+      {q:"What is 15% of 80?", opts:["8","10","12","15"], ans:2, topic:"Numbers"},
+      // ALGEBRA (10) — Trial 2
+      {q:"Expansion of 4(y minus 2) gives:", opts:["4y minus 2","4y minus 8","y minus 8","8y"], ans:1, topic:"Algebra"},
+      {q:"Simplify 5(x + 2) minus 3(x minus 1).", opts:["2x + 13","2x + 7","2x minus 7","8x + 7"], ans:0, topic:"Algebra"},
+      {q:"If x = 3 and y = minus 1, find the value of x times y.", opts:["3","minus 3","4","minus 4"], ans:1, topic:"Algebra"},
+      {q:"Multiply (b + 4)(b minus 2).", opts:["b squared minus 8","b squared + 2b minus 8","b squared minus 2b minus 8","b squared + 2b + 8"], ans:1, topic:"Algebra"},
+      {q:"Factorize 4x + 8.", opts:["4(x + 2)","x(4 + 8)","8(x + 4)","4(x + 8)"], ans:0, topic:"Algebra"},
+      {q:"Expand (x + 5) squared.", opts:["x squared + 25","x squared + 5x + 25","x squared + 10x + 25","x squared + 10x + 5"], ans:2, topic:"Algebra"},
+      {q:"Simplify 3x/9 + x/3.", opts:["4x/9","2x/3","4x/12","x"], ans:1, topic:"Algebra"},
+      {q:"Expand 2y(4y minus 3).", opts:["8y squared minus 3y","8y squared minus 6y","6y squared minus 3y","8y minus 6y"], ans:1, topic:"Algebra"},
+      {q:"If a = 3 and b = minus 1, evaluate (4a squared minus 2ab) divided by 5.", opts:["6","8","10","12"], ans:1, topic:"Algebra"},
+      {q:"Simplify the algebraic fraction: (a + b)/3 minus (a minus b)/2.", opts:["(minus a + 5b)/6","(a + 5b)/6","(5b minus a)/6","(a minus 5b)/6"], ans:2, topic:"Algebra"},
+      // GEOMETRY (10) — Trial 2
+      {q:"Find the area of a circle with radius 14 cm. (pi = 22/7)", opts:["44 cm squared","88 cm squared","154 cm squared","616 cm squared"], ans:3, topic:"Geometry"},
+      {q:"A triangle has sides 5, 12, and 13. Is it right-angled?", opts:["Yes, because 5+12=13","Yes, because 5 squared + 12 squared = 13 squared","No, the sides are wrong","Cannot be determined"], ans:1, topic:"Geometry"},
+      {q:"Vectors a = (2, 5) and b = (minus 3, 1). Find 3a minus 2b.", opts:["(12, 13)","(0, 13)","(12, 17)","(0, 17)"], ans:0, topic:"Geometry"},
+      {q:"If p = (minus 1, 2) as a column vector, find 2p.", opts:["(1, 4)","(minus 2, 4)","(minus 2, 2)","(minus 2, minus 4)"], ans:1, topic:"Geometry"},
+      {q:"In trigonometry, SOH stands for:", opts:["sin = Opp/Hyp","sin = Adj/Hyp","sin = Opp/Adj","sin = Hyp/Opp"], ans:0, topic:"Geometry"},
+      {q:"The circumference of a circle formula is:", opts:["pi r squared","2 pi r","pi d squared","l times w"], ans:1, topic:"Geometry"},
+      {q:"In the vector (x, y) as a column, y represents:", opts:["Horizontal shift","Gradient","Scalar","Vertical shift"], ans:3, topic:"Geometry"},
+      {q:"A circular youth center has a diameter of 28 m. What is its radius?", opts:["56 m","28 m","14 m","7 m"], ans:2, topic:"Geometry"},
+      {q:"Find the area of a semi-circle with radius 14 cm. (pi = 22/7)", opts:["308 cm squared","616 cm squared","154 cm squared","88 cm squared"], ans:0, topic:"Geometry"},
+      {q:"Subtract vector (2, 4) from (5, 8).", opts:["(3, 4)","(7, 12)","(minus 3, minus 4)","(10, 32)"], ans:0, topic:"Geometry"},
+      // PROBABILITY (10) — Trial 2
+      {q:"A bag contains 3 red and 2 green balls. P(green) =", opts:["3/5","2/3","2/5","1/2"], ans:2, topic:"Probability"},
+      {q:"Tossing a fair coin three times, the sample space size is:", opts:["3","6","8","9"], ans:2, topic:"Probability"},
+      {q:"A student has a 0.25 probability of failing. P(passing) as a fraction in simplest form is:", opts:["1/4","3/4","1/2","2/4"], ans:1, topic:"Probability"},
+      {q:"Find the probability of scoring a 1 on a fair six-sided die.", opts:["1","1/5","1/6","0"], ans:2, topic:"Probability"},
+      {q:"The probability of a certain event is:", opts:["0","0.5","between 0 and 1","1"], ans:3, topic:"Probability"},
+      {q:"A pen is picked from a box, replaced, then a second pen is picked. These events are:", opts:["Dependent","Impossible","Independent","Mutually exclusive"], ans:2, topic:"Probability"},
+      {q:"A fair die is thrown. P(even number) =", opts:["1/6","2/6","3/6","4/6"], ans:2, topic:"Probability"},
+      {q:"Vector AB + BC equals which vector?", opts:["BA","AC","CA","CB"], ans:1, topic:"Probability"},
+      {q:"A box has 3 blue and 4 pink pens picked with replacement. P(two blue) =", opts:["3/7 times 3/7","3/7 times 4/7","4/7 times 4/7","1/2 times 1/2"], ans:0, topic:"Probability"},
+      {q:"From the same box (3 blue, 4 pink, with replacement), P(two same colour) =", opts:["9/49","16/49","25/49","24/49"], ans:2, topic:"Probability"},
+      // SUBJECTIVES CONVERTED (20) — Trial 2: fresh scenarios
+      {q:"A circular park has a diameter of 14 m. Using pi = 22/7, find its area.", opts:["44 m squared","88 m squared","154 m squared","22 m squared"], ans:2, topic:"Subjectives"},
+      {q:"A rectangular stage has length 10 m and width w. If w = 4 m, write its perimeter.", opts:["14 m","28 m","40 m","20 m"], ans:1, topic:"Subjectives"},
+      {q:"A worker earns GH 500. She spends 1/5 on food and 2/5 on rent. How much is left?", opts:["GH 100","GH 150","GH 200","GH 250"], ans:2, topic:"Subjectives"},
+      {q:"A technician moves using vector (3, 4) then (1, 2). Find the total displacement.", opts:["(4, 6)","(2, 2)","(4, 2)","(3, 6)"], ans:0, topic:"Subjectives"},
+      {q:"A stage bag has 5 red, 2 blue, and 3 yellow markers. P(yellow) =", opts:["5/10","3/10","2/10","7/10"], ans:1, topic:"Subjectives"},
+      {q:"If 2/7 of a hall floor is carpeted, what fraction is NOT carpeted?", opts:["2/7","5/7","7/2","1/7"], ans:1, topic:"Subjectives"},
+      {q:"Order of operations: Evaluate 3 squared + 2 times 4 minus 6 divided by 2.", opts:["12","14","16","8"], ans:0, topic:"Subjectives"},
+      {q:"Express 4 and 3/8 as an improper fraction.", opts:["32/8","35/8","15/8","43/8"], ans:1, topic:"Subjectives"},
+      {q:"Faako got 42 out of 60. What percentage did she get CORRECT?", opts:["42%","58%","70%","30%"], ans:2, topic:"Subjectives"},
+      {q:"Expand and simplify: 2(3x + 4) minus 3(x minus 2).", opts:["3x + 14","3x + 2","9x + 14","3x minus 2"], ans:0, topic:"Subjectives"},
+      {q:"Multiply (3x + 1)(3x minus 1).", opts:["9x squared + 1","9x squared minus 1","9x squared minus 3","6x squared minus 1"], ans:1, topic:"Subjectives"},
+      {q:"If a = minus 1 and b = 2, evaluate 3a squared + 2ab.", opts:["minus 1","minus 7","1","7"], ans:0, topic:"Subjectives"},
+      {q:"A ladder 10 m leans against a wall, foot 6 m from the wall. How high does it reach?", opts:["4 m","8 m","16 m","64 m"], ans:1, topic:"Subjectives"},
+      {q:"Calculate the area of a semi-circle with radius 7 cm. (pi = 22/7)", opts:["154 cm squared","77 cm squared","44 cm squared","38.5 cm squared"], ans:1, topic:"Subjectives"},
+      {q:"Vectors p = (2, minus 1) and q = (1, 3). Find 3p + 2q.", opts:["(8, 3)","(3, 2)","(8, minus 3)","(5, 3)"], ans:0, topic:"Subjectives"},
+      {q:"A box has 5 blue and 3 pink pens picked with replacement. P(two pink) =", opts:["3/8 times 3/8","5/8 times 5/8","3/8 times 5/8","9/64"], ans:3, topic:"Subjectives"},
+      {q:"From the same box (5 blue, 3 pink, with replacement), P(two different colours) =", opts:["15/64","30/64","25/64","9/64"], ans:1, topic:"Subjectives"},
+      {q:"If the probability of a team winning is 0.6, P(not winning) as a percentage is:", opts:["6%","4%","60%","40%"], ans:3, topic:"Subjectives"},
+      {q:"A fair die is thrown. P(number that is a perfect square) = (Perfect squares on a die: 1, 4)", opts:["1/6","2/6","3/6","4/6"], ans:1, topic:"Subjectives"},
+      {q:"Simplify: (2a + b)/5 minus (a minus 2b)/5.", opts:["(a + 3b)/5","(a minus 3b)/5","(3a + b)/5","(3b minus a)/5"], ans:0, topic:"Subjectives"}
+    ],
+    3: [
+      // NUMBERS (10) — Trial 3
+      {q:"Which of the following is equivalent to 1/2?", opts:["4/6","4/8","3/8","5/9"], ans:1, topic:"Numbers"},
+      {q:"Express 19/6 as a mixed number.", opts:["3 and 1/6","3 and 2/6","2 and 5/6","3 and 5/6"], ans:0, topic:"Numbers"},
+      {q:"Simplify using order of operations: 12 + 3 times 4 minus 6.", opts:["18","42","6","24"], ans:0, topic:"Numbers"},
+      {q:"Evaluate: 5/6 + 1/4.", opts:["6/10","13/12","1 and 1/12","1 and 1/6"], ans:2, topic:"Numbers"},
+      {q:"Express 0.4 as a percentage.", opts:["4%","0.4%","40%","400%"], ans:2, topic:"Numbers"},
+      {q:"Evaluate 5 squared minus 2 cubed.", opts:["17","10","33","7"], ans:0, topic:"Numbers"},
+      {q:"A worker spends 1/5 on food and 3/8 on clothing. What fraction is left?", opts:["4/40","17/40","23/40","13/40"], ans:2, topic:"Numbers"},
+      {q:"Express 4 and 1/3 as an improper fraction.", opts:["12/3","13/3","15/3","5/3"], ans:1, topic:"Numbers"},
+      {q:"Simplify 9/12 to its simplest form.", opts:["4/6","2/4","3/4","6/9"], ans:2, topic:"Numbers"},
+      {q:"What is 35% of 60?", opts:["15","18","21","25"], ans:2, topic:"Numbers"},
+      // ALGEBRA (10) — Trial 3
+      {q:"Expansion of 7(2x minus 1) gives:", opts:["14x minus 1","14x minus 7","7x minus 7","7x minus 1"], ans:1, topic:"Algebra"},
+      {q:"Simplify 4(a + 3) + 2(a minus 5).", opts:["6a + 2","6a + 22","6a minus 2","6a + 12"], ans:0, topic:"Algebra"},
+      {q:"If x = 4 and y = 2, find the value of 2x minus y squared.", opts:["0","4","12","24"], ans:1, topic:"Algebra"},
+      {q:"Multiply (x + 3)(x minus 3).", opts:["x squared minus 9","x squared + 9","x squared minus 6x minus 9","x squared + 6x + 9"], ans:0, topic:"Algebra"},
+      {q:"Factorize 10y + 15.", opts:["5(2y + 3)","10(y + 5)","15(y + 10)","5(y + 3)"], ans:0, topic:"Algebra"},
+      {q:"Expand (3x minus 2) squared.", opts:["9x squared minus 4","9x squared minus 6x + 4","9x squared minus 12x + 4","6x squared minus 4"], ans:2, topic:"Algebra"},
+      {q:"Simplify x/4 + x/4.", opts:["x/8","x/2","2x/4","x/16"], ans:1, topic:"Algebra"},
+      {q:"Expand minus 3(2x + 5).", opts:["minus 6x + 5","minus 6x minus 15","minus 6x + 15","6x minus 15"], ans:1, topic:"Algebra"},
+      {q:"Solve for x: 2x + 7 = 15.", opts:["4","11","8","3"], ans:0, topic:"Algebra"},
+      {q:"Find the perimeter of a rectangle with sides 1 and 1/3 cm and 3 cm.", opts:["4 and 1/3 cm","8 and 2/3 cm","4 cm","9 cm"], ans:1, topic:"Algebra"},
+      // GEOMETRY (10) — Trial 3
+      {q:"Find the area of a circle with radius 21 cm. (pi = 22/7)", opts:["66 cm squared","132 cm squared","1386 cm squared","462 cm squared"], ans:2, topic:"Geometry"},
+      {q:"A right-angled triangle has legs 8 cm and 15 cm. What is the hypotenuse?", opts:["16 cm","17 cm","23 cm","12 cm"], ans:1, topic:"Geometry"},
+      {q:"A technician moves using vector (4, 2) then (2, 3). Find total displacement.", opts:["(6, 5)","(2, 1)","(8, 6)","(6, 1)"], ans:0, topic:"Geometry"},
+      {q:"Find 4 times the vector (2, 1) as a column.", opts:["(6, 1)","(8, 4)","(8, 1)","(2, 4)"], ans:1, topic:"Geometry"},
+      {q:"In trigonometry, CAH stands for:", opts:["cos = Opp/Hyp","cos = Adj/Hyp","cos = Adj/Opp","cos = Hyp/Adj"], ans:1, topic:"Geometry"},
+      {q:"Find the area of a semi-circle with radius 21 cm. (pi = 22/7)", opts:["693 cm squared","1386 cm squared","66 cm squared","346.5 cm squared"], ans:0, topic:"Geometry"},
+      {q:"Which vector is the same as AB + BC?", opts:["BA","AC","CA","CB"], ans:1, topic:"Geometry"},
+      {q:"A circle has area 154 cm squared. (pi = 22/7). Find its radius.", opts:["7 cm","14 cm","22 cm","49 cm"], ans:0, topic:"Geometry"},
+      {q:"A circle has area 154 cm squared and radius 7 cm. Find its circumference. (pi = 22/7)", opts:["22 cm","44 cm","154 cm","88 cm"], ans:1, topic:"Geometry"},
+      {q:"A displacement vector describes:", opts:["Only speed","A direction only","Both magnitude and direction of movement","Only distance"], ans:2, topic:"Geometry"},
+      // PROBABILITY (10) — Trial 3
+      {q:"A bag has 4 red, 3 blue, and 3 yellow markers. P(blue) =", opts:["4/10","3/10","7/10","3/7"], ans:1, topic:"Probability"},
+      {q:"Throwing two standard dice, the total number of outcomes in the sample space is:", opts:["12","24","36","6"], ans:2, topic:"Probability"},
+      {q:"If the probability of a student passing is 0.6, P(failing) as a fraction in simplest form is:", opts:["3/5","2/5","1/5","4/5"], ans:1, topic:"Probability"},
+      {q:"A fair die is thrown. P(multiple of 3) =", opts:["1/6","2/6","3/6","4/6"], ans:1, topic:"Probability"},
+      {q:"If P(event) = 0, it means the event is:", opts:["Certain","Likely","Impossible","Possible"], ans:2, topic:"Probability"},
+      {q:"For any event A: P(A) + P(not A) always equals:", opts:["0","0.5","1","2"], ans:2, topic:"Probability"},
+      {q:"Two events are mutually exclusive if:", opts:["They always happen together","They cannot happen at the same time","One causes the other","They are equally likely"], ans:1, topic:"Probability"},
+      {q:"A fair die is thrown. P(number less than 3) =", opts:["1/6","2/6","3/6","4/6"], ans:1, topic:"Probability"},
+      {q:"A coin is tossed twice. P(at least one Head) =", opts:["1/4","1/2","3/4","1"], ans:2, topic:"Probability"},
+      {q:"A student scores 42 out of 60. What is the percentage score?", opts:["42%","60%","70%","80%"], ans:2, topic:"Probability"},
+      // SUBJECTIVES CONVERTED (20) — Trial 3
+      {q:"A circular hall has a diameter of 42 m. Using pi = 22/7, find its area.", opts:["132 m squared","1386 m squared","264 m squared","693 m squared"], ans:1, topic:"Subjectives"},
+      {q:"A rectangular stage has length 15 m and width w. If w = 6 m, what is its perimeter?", opts:["21 m","42 m","90 m","45 m"], ans:1, topic:"Subjectives"},
+      {q:"A worker earns GH 600. She spends 1/3 on food and 1/4 on rent. How much is left?", opts:["GH 150","GH 200","GH 250","GH 350"], ans:2, topic:"Subjectives"},
+      {q:"A truck moves using vector (5, 0) then (0, 5). Find the total displacement vector.", opts:["(5, 5)","(10, 0)","(0, 10)","(5, 0)"], ans:0, topic:"Subjectives"},
+      {q:"A stage bag has 6 red, 1 blue, and 3 yellow markers. P(NOT yellow) =", opts:["3/10","7/10","6/10","1/10"], ans:1, topic:"Subjectives"},
+      {q:"If 4/9 of a floor is carpeted, what fraction is tiled?", opts:["4/9","1/9","5/9","5/4"], ans:2, topic:"Subjectives"},
+      {q:"Order of operations: Evaluate (4 + 2) squared divided by 3 minus 4.", opts:["8","12","16","24"], ans:0, topic:"Subjectives"},
+      {q:"Express 5 and 2/3 as an improper fraction.", opts:["10/3","15/3","17/3","25/3"], ans:2, topic:"Subjectives"},
+      {q:"Express 0.875 as a fraction in its simplest form.", opts:["875/1000","7/8","8/7","87/100"], ans:1, topic:"Subjectives"},
+      {q:"Expand and simplify: 5(2x minus 1) minus 3(x + 4).", opts:["7x minus 17","7x + 17","7x minus 5","10x minus 17"], ans:0, topic:"Subjectives"},
+      {q:"Multiply (4x + 1)(4x minus 1).", opts:["16x squared + 1","16x squared minus 1","8x squared minus 1","16x squared minus 4"], ans:1, topic:"Subjectives"},
+      {q:"If p = 3 and q = minus 1, evaluate 2p squared minus 3pq.", opts:["9","27","27","18"], ans:1, topic:"Subjectives"},
+      {q:"A ladder 17 m leans against a wall, foot 8 m from the wall. How high does it reach?", opts:["9 m","15 m","25 m","289 m"], ans:1, topic:"Subjectives"},
+      {q:"Calculate the area of a semi-circle with radius 21 cm. (pi = 22/7)", opts:["693 cm squared","1386 cm squared","66 cm squared","346.5 cm squared"], ans:0, topic:"Subjectives"},
+      {q:"Vectors r = (3, minus 2) and s = (minus 1, 4). Find r + 2s.", opts:["(1, 6)","(5, minus 6)","(1, minus 6)","(2, 6)"], ans:0, topic:"Subjectives"},
+      {q:"A box has 4 blue and 3 pink pens with replacement. P(one blue then one pink) =", opts:["4/7 times 3/7","3/7 times 4/7","4/7 times 4/7","3/7 times 3/7"], ans:0, topic:"Subjectives"},
+      {q:"From the same box (4 blue, 3 pink, with replacement), P(both different colours) =", opts:["12/49","24/49","16/49","9/49"], ans:1, topic:"Subjectives"},
+      {q:"If the probability of a team losing is 0.35, P(not losing) as a fraction in simplest form is:", opts:["7/20","13/20","35/100","65/100"], ans:1, topic:"Subjectives"},
+      {q:"A fair die is thrown. P(number that is a square number) = (Square numbers on a die: 1, 4)", opts:["1/6","2/6","3/6","4/6"], ans:1, topic:"Subjectives"},
+      {q:"Simplify: (3x + y)/4 minus (x minus y)/4.", opts:["(2x + 2y)/4","(4x)/4","(2x minus 2y)/4","(x + y)/2"], ans:0, topic:"Subjectives"}
+    ]
+  }
+};
 
-// Shuffle once at load
-let shuffled = [...QUESTIONS];
-let userAnswers = new Array(60).fill(null);
-let timerInterval;
-let totalSeconds = 60 * 60; // 60 min
-let startTime;
-let submitted = false;
-let answeredCount = 0;
+const grades = ['Basic 5','Basic 6','Basic 7','Basic 8','Basic 9'];
+let currentGradeIdx = 0;
+let currentTrial = 1;
+let userAnswers = {};
 
-const letters = ["A","B","C","D"];
-
-function buildQuiz() {
-  const container = document.getElementById('questions-container');
-  container.innerHTML = '';
-
-  const section1 = document.createElement('div');
-  section1.className = 'section-title';
-  section1.textContent = 'Section A — Objective Test (Questions 1–40)';
-  container.appendChild(section1);
-
-  const section2Title = document.createElement('div');
-  section2Title.id = 'section2-marker';
-
-  shuffled.forEach((q, i) => {
-    if (i === 40) {
-      const s2 = document.createElement('div');
-      s2.className = 'section-title';
-      s2.textContent = 'Section B — Extended Objectives (Questions 41–60)';
-      container.appendChild(s2);
-    }
-
-    const card = document.createElement('div');
-    card.className = 'q-card';
-    card.id = `card-${i}`;
-
-    const qnum = document.createElement('div');
-    qnum.className = 'q-num';
-    qnum.textContent = `Question ${i + 1}`;
-
-    const qtext = document.createElement('div');
-    qtext.className = 'q-text';
-    qtext.textContent = q.q;
-
-    const optsDiv = document.createElement('div');
-    optsDiv.className = 'options';
-
-    q.opts.forEach((opt, oi) => {
-      const btn = document.createElement('button');
-      btn.className = 'opt-btn';
-      btn.id = `q${i}-opt${oi}`;
-
-      const letter = document.createElement('span');
-      letter.className = 'opt-letter';
-      letter.textContent = letters[oi];
-
-      const text = document.createElement('span');
-      text.className = 'opt-text';
-      text.textContent = opt.substring(3); // remove "A. " etc
-
-      btn.appendChild(letter);
-      btn.appendChild(text);
-      btn.onclick = () => selectAnswer(i, oi);
-      optsDiv.appendChild(btn);
-    });
-
-    card.appendChild(qnum);
-    card.appendChild(qtext);
-    card.appendChild(optsDiv);
-    container.appendChild(card);
-  });
+function gradeKey(idx){ return grades[idx].toLowerCase().replace(' ',''); }
+function initNav(){
+  const nav = document.getElementById('grade-nav');
+  nav.innerHTML = grades.map((g,i)=>`<div class="nav-item ${i===0?'active':''}" onclick="setGrade(${i},this)">${g}</div>`).join('');
 }
-
-function selectAnswer(qIdx, optIdx) {
-  if (submitted) return;
-  if (userAnswers[qIdx] !== null) return; // locked — no changes
-
-  userAnswers[qIdx] = optIdx;
-  answeredCount++;
-
-  // Lock all options for this question
-  const card = document.getElementById(`card-${qIdx}`);
-  const btns = card.querySelectorAll('.opt-btn');
-  btns.forEach(b => b.classList.add('locked'));
-  card.classList.add('answered');
-
-  // Highlight selected
-  const selectedBtn = document.getElementById(`q${qIdx}-opt${optIdx}`);
-  const correctLetter = shuffled[qIdx].ans;
-  const correctIdx = letters.indexOf(correctLetter);
-
-  if (optIdx === correctIdx) {
-    selectedBtn.classList.add('selected-correct');
-  } else {
-    selectedBtn.classList.add('selected-wrong');
-    // Show correct
-    document.getElementById(`q${qIdx}-opt${correctIdx}`).classList.add('show-correct');
-  }
-
+function toggleMenu(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('mask').classList.toggle('active');
+}
+function setGrade(idx,el){
+  currentGradeIdx=idx;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('view-title').innerText=grades[idx];
+  renderGrid();
+  if(window.innerWidth<1024) toggleMenu();
+}
+function setTrial(num,el){
+  currentTrial=num;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderGrid();
+}
+function hasQuestions(){
+  const gk=gradeKey(currentGradeIdx);
+  return questionBank[gk]&&questionBank[gk][currentTrial];
+}
+function renderGrid(){
+  const grid=document.getElementById('card-grid');
+  const ready=hasQuestions();
+  const gk=gradeKey(currentGradeIdx);
+  const qCount = ready ? questionBank[gk][currentTrial].length : 0;
+  grid.innerHTML=`<div class="card" onclick="${ready?'startQuiz()':'alert(\"Questions coming soon!\")'}">
+    <div class="btn-label">Academic Portfolio</div>
+    <h3>T-${currentTrial}</h3>
+    <p style="color:var(--text-dim);font-size:0.9rem;margin-top:0.5rem;">${ready?`Start ${qCount}-Question Interactive Session`:'Questions coming soon'}</p>
+  </div>`;
+}
+function startQuiz(){
+  const gk=gradeKey(currentGradeIdx);
+  const questions=questionBank[gk]?.[currentTrial];
+  if(!questions){alert('Questions coming soon!');return;}
+  userAnswers={};
+  const overlay=document.getElementById('quiz-overlay');
+  const content=document.getElementById('quiz-content');
+  document.getElementById('quiz-meta').innerText=`${grades[currentGradeIdx]} • Trial ${currentTrial} • ${questions.length} Questions`;
+  document.getElementById('score-panel').style.display='none';
+  document.getElementById('progress-fill').style.width='0%';
+  document.getElementById('live-score-box').style.display='none';
+  document.getElementById('live-pct').innerText='0%';
+  document.getElementById('live-fraction').innerText='0 correct of 0 answered';
+  let html='';let lastTopic='';
+  questions.forEach((q,i)=>{
+    const showBadge=q.topic!==lastTopic;lastTopic=q.topic;
+    html+=`<div class="question-box" id="qbox-${i}">
+      <span class="q-num">Question ${i+1}</span>
+      ${showBadge?`<div class="q-badge">${q.topic}</div>`:''}
+      <div class="q-text">${q.q}</div>
+      <div class="options-list" id="opts-${i}">
+        ${q.opts.map((opt,j)=>`<button class="option-btn" id="opt-${i}-${j}" onclick="selectOpt(${i},${j})">
+          <span class="opt-letter">${['A','B','C','D'][j]}</span>${opt}
+        </button>`).join('')}
+      </div>
+      <button class="btn-confirm" id="confirm-${i}" onclick="confirmAnswer(${i})">Confirm Answer</button>
+    </div>`;
+  });
+  content.innerHTML=html;
+  overlay.style.display='flex';
+  document.body.style.overflow='hidden';
+  overlay.scrollTop=0;
+}
+function selectOpt(qIdx,optIdx){
+  if(userAnswers[qIdx]?.confirmed)return;
+  const questions=getQuestions();
+  questions[qIdx].opts.forEach((_,j)=>document.getElementById(`opt-${qIdx}-${j}`)?.classList.remove('selected'));
+  document.getElementById(`opt-${qIdx}-${optIdx}`)?.classList.add('selected');
+  userAnswers[qIdx]={chosen:optIdx,confirmed:false};
+  document.getElementById(`confirm-${qIdx}`).style.display='inline-block';
+}
+function confirmAnswer(qIdx){
+  if(userAnswers[qIdx]?.confirmed)return;
+  const chosen=userAnswers[qIdx]?.chosen;
+  if(chosen===undefined)return;
+  const q=getQuestions()[qIdx];
+  userAnswers[qIdx].confirmed=true;
+  q.opts.forEach((_,j)=>{
+    const btn=document.getElementById(`opt-${qIdx}-${j}`);
+    btn.disabled=true;btn.classList.remove('selected');
+    if(j===q.ans)btn.classList.add('correct');
+    else if(j===chosen)btn.classList.add('wrong');
+  });
+  document.getElementById(`confirm-${qIdx}`).style.display='none';
+  const total=getQuestions().length;
+  const confirmed=Object.values(userAnswers).filter(a=>a.confirmed);
+  const done=confirmed.length;
+  const correct=confirmed.filter((a,i)=>{
+    const qI=Object.keys(userAnswers).find(k=>userAnswers[k]===a);
+    return userAnswers[qI].chosen===getQuestions()[qI].ans;
+  }).length;
+  // Count correct properly
+  let correctCount=0;
+  getQuestions().forEach((_,i)=>{
+    if(userAnswers[i]?.confirmed && userAnswers[i].chosen===getQuestions()[i].ans) correctCount++;
+  });
+  const pct=done>0?Math.round(correctCount/done*100):0;
+  // Update progress bar
+  document.getElementById('progress-fill').style.width=(done/total*100)+'%';
+  // Update meta text
+  document.getElementById('quiz-meta').innerText=`${grades[currentGradeIdx]} • Trial ${currentTrial} • ${done}/${total} Answered`;
   // Update live score
-  updateLiveScore();
-  updateAnsweredCount();
+  const scoreBox=document.getElementById('live-score-box');
+  const livePct=document.getElementById('live-pct');
+  const liveFrac=document.getElementById('live-fraction');
+  scoreBox.style.display='block';
+  livePct.innerText=pct+'%';
+  liveFrac.innerText=`${correctCount} correct of ${done} answered`;
+  livePct.style.color=pct>=70?'#34c759':pct>=50?'var(--accent)':'#ff3b30';
+  if(done===total)showScore();
 }
-
-function updateLiveScore() {
-  let correct = 0;
-  userAnswers.forEach((ans, i) => {
-    if (ans !== null) {
-      const correctIdx = letters.indexOf(shuffled[i].ans);
-      if (ans === correctIdx) correct++;
-    }
-  });
-
-  const pct = Math.round((correct / 60) * 100);
-  document.getElementById('score-val').textContent = `${correct} / 60`;
-  document.getElementById('pct-val').textContent = `${pct}%`;
-  document.getElementById('progress-bar').style.width = `${(answeredCount / 60) * 100}%`;
+function getQuestions(){
+  const gk=gradeKey(currentGradeIdx);
+  return questionBank[gk][currentTrial];
 }
-
-function updateAnsweredCount() {
-  document.getElementById('answered-count').textContent = `${answeredCount} of 60 answered`;
+function showScore(){
+  const questions=getQuestions();
+  let correct=0;
+  questions.forEach((q,i)=>{if(userAnswers[i]?.chosen===q.ans)correct++;});
+  const wrong=questions.length-correct;
+  const pct=Math.round(correct/questions.length*100);
+  document.getElementById('score-val').innerText=`${correct}/${questions.length}`;
+  document.getElementById('stat-correct').innerText=correct;
+  document.getElementById('stat-wrong').innerText=wrong;
+  document.getElementById('stat-pct').innerText=pct+'%';
+  document.getElementById('score-msg').innerText=pct>=80?'Excellent Work! Outstanding Performance.':pct>=60?'Good Effort — Keep Practising!':'Keep Going — You Can Improve!';
+  const panel=document.getElementById('score-panel');
+  panel.style.display='block';
+  setTimeout(()=>panel.scrollIntoView({behavior:'smooth'}),100);
 }
-
-function startTimer() {
-  startTime = Date.now();
-  timerInterval = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    const remaining = totalSeconds - elapsed;
-
-    if (remaining <= 0) {
-      clearInterval(timerInterval);
-      document.getElementById('timer-val').textContent = '00:00';
-      submitQuiz(true);
-      return;
-    }
-
-    const m = Math.floor(remaining / 60).toString().padStart(2, '0');
-    const s = (remaining % 60).toString().padStart(2, '0');
-    const timerEl = document.getElementById('timer-val');
-    timerEl.textContent = `${m}:${s}`;
-
-    if (remaining <= 300) {
-      timerEl.classList.add('urgent');
-    }
-  }, 500);
+function closeQuiz(){
+  document.getElementById('quiz-overlay').style.display='none';
+  document.body.style.overflow='auto';
 }
-
-function submitQuiz(autoSubmit = false) {
-  if (submitted) return;
-  submitted = true;
-  clearInterval(timerInterval);
-
-  const elapsed = Math.floor((Date.now() - startTime) / 1000);
-  const used_m = Math.floor(elapsed / 60).toString().padStart(2,'0');
-  const used_s = (elapsed % 60).toString().padStart(2,'0');
-
-  // Lock everything remaining
-  for (let i = 0; i < 60; i++) {
-    if (userAnswers[i] === null) {
-      const card = document.getElementById(`card-${i}`);
-      const btns = card.querySelectorAll('.opt-btn');
-      btns.forEach(b => b.classList.add('locked'));
-      // Reveal correct
-      const correctIdx = letters.indexOf(shuffled[i].ans);
-      document.getElementById(`q${i}-opt${correctIdx}`).classList.add('show-correct');
-    }
-  }
-
-  // Count
-  let correct = 0;
-  userAnswers.forEach((ans, i) => {
-    if (ans !== null) {
-      const correctIdx = letters.indexOf(shuffled[i].ans);
-      if (ans === correctIdx) correct++;
-    }
-  });
-  const wrong = userAnswers.filter((a,i) => a !== null && a !== letters.indexOf(shuffled[i].ans)).length;
-  const skipped = userAnswers.filter(a => a === null).length;
-  const pct = Math.round((correct / 60) * 100);
-
-  // Show result screen
-  setTimeout(() => {
-    document.getElementById('main').classList.add('hidden');
-    const rs = document.getElementById('result-screen');
-    rs.classList.add('visible');
-
-    document.getElementById('result-pct').textContent = pct + '%';
-    document.getElementById('rs-correct').textContent = correct;
-    document.getElementById('rs-wrong').textContent = wrong;
-    document.getElementById('rs-skipped').textContent = skipped;
-    document.getElementById('rs-time').textContent = `${used_m}:${used_s}`;
-
-    // Conic gradient for circle
-    const circle = document.getElementById('result-circle');
-    circle.style.background = `conic-gradient(#f0c040 ${pct}%, #252b38 ${pct}%)`;
-
-    // Grade
-    let grade, gradeColor;
-    if (pct >= 80) { grade = '🏆 Excellent — A'; gradeColor = '#2dca73'; }
-    else if (pct >= 70) { grade = '🎉 Very Good — B'; gradeColor = '#3ecfcf'; }
-    else if (pct >= 60) { grade = '👍 Good — C'; gradeColor = '#f0c040'; }
-    else if (pct >= 50) { grade = '📚 Average — D'; gradeColor = '#f0a030'; }
-    else { grade = '⚠️ Needs Improvement — F'; gradeColor = '#e84a5f'; }
-
-    const gradeEl = document.getElementById('result-grade');
-    gradeEl.textContent = grade;
-    gradeEl.style.background = gradeColor + '22';
-    gradeEl.style.color = gradeColor;
-    gradeEl.style.border = `1px solid ${gradeColor}55`;
-
-    document.getElementById('result-title').textContent = autoSubmit ? "Time's Up!" : "Quiz Complete!";
-    document.getElementById('result-sub').textContent = `You scored ${correct} out of 60`;
-  }, 400);
-}
-
-function retryQuiz() {
-  submitted = false;
-  userAnswers = new Array(60).fill(null);
-  answeredCount = 0;
-  totalSeconds = 60 * 60;
-
-  document.getElementById('result-screen').classList.remove('visible');
-  document.getElementById('main').classList.remove('hidden');
-  document.getElementById('score-val').textContent = '0 / 60';
-  document.getElementById('pct-val').textContent = '0%';
-  document.getElementById('timer-val').textContent = '60:00';
-  document.getElementById('timer-val').classList.remove('urgent');
-  document.getElementById('progress-bar').style.width = '0%';
-  document.getElementById('answered-count').textContent = '0 of 60 answered';
-
-  buildQuiz();
-  startTimer();
-  window.scrollTo(0,0);
-}
-
-// INIT
-buildQuiz();
-startTimer();
+window.onload=()=>{initNav();renderGrid();};
 </script>
 </body>
 </html>
