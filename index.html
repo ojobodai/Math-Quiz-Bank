@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Basic 8 Mathematics Quiz</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --card: #161a23;
+    --border: #252b38;
+    --accent: #f0c040;
+    --accent2: #3ecfcf;
+    --correct: #2dca73;
+    --wrong: #e84a5f;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* TOP BAR */
+  #topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(13,15,20,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 28px;
+    gap: 20px;
+  }
+  #topbar h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .bar-stats {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+  .stat-box {
+    text-align: center;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+  #score-val { color: var(--accent2); }
+  #pct-val { color: var(--accent); }
+  #timer-val {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    transition: color 0.3s;
+  }
+  #timer-val.urgent { color: var(--wrong); animation: pulse 1s infinite; }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* PROGRESS BAR */
+  #progress-wrap {
+    height: 3px;
+    background: var(--border);
+    position: sticky;
+    top: 61px;
+    z-index: 99;
+  }
+  #progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  /* MAIN */
+  #main {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin: 36px 0 18px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* QUESTION CARD */
+  .q-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    margin-bottom: 14px;
+    transition: border-color 0.2s;
+  }
+  .q-card.answered { border-color: #2a3040; }
+
+  .q-num {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .q-text {
+    font-size: 0.97rem;
+    line-height: 1.6;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  /* OPTIONS */
+  .options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  @media (max-width: 520px) {
+    .options { grid-template-columns: 1fr; }
+  }
+
+  .opt-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    text-align: left;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+  .opt-btn:not(.locked):hover {
+    border-color: var(--accent2);
+    background: rgba(62,207,207,0.06);
+    transform: translateY(-1px);
+  }
+  .opt-btn .opt-letter {
+    min-width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: 'Syne', sans-serif;
+    color: var(--muted);
+    transition: background 0.15s, color 0.15s;
+  }
+  .opt-btn .opt-text { flex: 1; line-height: 1.4; }
+
+  /* LOCKED states */
+  .opt-btn.locked { cursor: not-allowed; }
+  .opt-btn.selected-correct {
+    border-color: var(--correct);
+    background: rgba(45,202,115,0.1);
+  }
+  .opt-btn.selected-correct .opt-letter {
+    background: var(--correct);
+    color: #0d0f14;
+  }
+  .opt-btn.selected-wrong {
+    border-color: var(--wrong);
+    background: rgba(232,74,95,0.1);
+  }
+  .opt-btn.selected-wrong .opt-letter {
+    background: var(--wrong);
+    color: #fff;
+  }
+  .opt-btn.show-correct {
+    border-color: var(--correct);
+    background: rgba(45,202,115,0.06);
+  }
+  .opt-btn.show-correct .opt-letter {
+    background: var(--correct);
+    color: #0d0f14;
+  }
+
+  /* RESULT SCREEN */
+  #result-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    text-align: center;
+    padding: 40px 20px;
+  }
+  #result-screen.visible { display: flex; }
+  #main.hidden { display: none; }
+
+  .result-circle {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: conic-gradient(var(--accent) 0%, transparent 0%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 28px;
+    position: relative;
+  }
+  .result-circle::before {
+    content: '';
+    position: absolute;
+    inset: 10px;
+    border-radius: 50%;
+    background: var(--bg);
+  }
+  .result-pct-text {
+    position: relative;
+    z-index: 1;
+    font-family: 'Syne', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: var(--accent);
+  }
+  .result-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .result-sub {
+    font-size: 1rem;
+    color: var(--muted);
+    margin-bottom: 32px;
+  }
+  .result-grade {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    padding: 10px 28px;
+    border-radius: 50px;
+    margin-bottom: 28px;
+  }
+  .result-stats {
+    display: flex;
+    gap: 28px;
+    margin-bottom: 36px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .rs-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 24px;
+    min-width: 110px;
+  }
+  .rs-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+  }
+  .rs-lbl { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+  .retry-btn {
+    background: var(--accent);
+    color: #0d0f14;
+    border: none;
+    border-radius: 8px;
+    padding: 13px 36px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .retry-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  /* SUBMIT */
+  #submit-wrap {
+    text-align: center;
+    margin-top: 36px;
+  }
+  #submit-btn {
+    background: var(--accent);
+    color: #0d0f14;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 48px;
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    letter-spacing: 0.04em;
+  }
+  #submit-btn:hover { opacity: 0.85; transform: translateY(-2px); }
+  #submit-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .answered-indicator {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <h1>📐 Basic 8 Mathematics</h1>
+  <div class="bar-stats">
+    <div class="stat-box">
+      <div class="stat-label">Score</div>
+      <div class="stat-value" id="score-val">0 / 60</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Percentage</div>
+      <div class="stat-value" id="pct-val">0%</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Time Left</div>
+      <div class="stat-value" id="timer-val">60:00</div>
+    </div>
+  </div>
+</div>
+<div id="progress-wrap"><div id="progress-bar"></div></div>
+
+<!-- QUIZ MAIN -->
+<div id="main">
+  <div id="questions-container"></div>
+  <div id="submit-wrap">
+    <button id="submit-btn" onclick="submitQuiz()">Submit Quiz</button>
+    <div class="answered-indicator" id="answered-count">0 of 60 answered</div>
+  </div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div id="result-screen">
+  <div class="result-circle" id="result-circle">
+    <div class="result-pct-text" id="result-pct">0%</div>
+  </div>
+  <div class="result-title" id="result-title">Quiz Complete!</div>
+  <div class="result-sub" id="result-sub">Here's how you did</div>
+  <div class="result-grade" id="result-grade"></div>
+  <div class="result-stats">
+    <div class="rs-box"><div class="rs-val" id="rs-correct" style="color:var(--correct)">0</div><div class="rs-lbl">Correct</div></div>
+    <div class="rs-box"><div class="rs-val" id="rs-wrong" style="color:var(--wrong)">0</div><div class="rs-lbl">Wrong</div></div>
+    <div class="rs-box"><div class="rs-val" id="rs-skipped" style="color:var(--muted)">0</div><div class="rs-lbl">Skipped</div></div>
+    <div class="rs-box"><div class="rs-val" id="rs-time" style="color:var(--accent2)">-</div><div class="rs-lbl">Time Used</div></div>
+  </div>
+  <button class="retry-btn" onclick="retryQuiz()">🔁 Try Again</button>
+</div>
+
+<script>
+const QUESTIONS = [
+  // ── SECTION A (original 40 with changed values) ──
+  {
+    q: "Which of the following is equivalent to 3/4?",
+    opts: ["A. 6/10", "B. 9/12", "C. 5/8", "D. 10/16"],
+    ans: "B"
+  },
+  {
+    q: "Express 17/5 as a mixed number.",
+    opts: ["A. 3 1/5", "B. 2 3/5", "C. 3 2/5", "D. 4 1/5"],
+    ans: "C"
+  },
+  {
+    q: "Simplify: 24 ÷ 4 × (5 − 3) + 7",
+    opts: ["A. 12", "B. 19", "C. 14", "D. 21"],
+    ans: "B"
+  },
+  {
+    q: "Evaluate: 2/3 + 5/9",
+    opts: ["A. 7/12", "B. 11/9", "C. 7/9", "D. 13/9"],
+    ans: "B"
+  },
+  {
+    q: "Expansion of 7(x + 4) gives:",
+    opts: ["A. 7x + 4", "B. x + 28", "C. 7x + 28", "D. 28x"],
+    ans: "C"
+  },
+  {
+    q: "Simplify 4(x + 3) − 3(x − 2).",
+    opts: ["A. x + 6", "B. x + 18", "C. x − 6", "D. 7x + 18"],
+    ans: "B"
+  },
+  {
+    q: "If a = 3 and b = −3, find a + b.",
+    opts: ["A. 6", "B. −6", "C. 0", "D. 9"],
+    ans: "C"
+  },
+  {
+    q: "Multiply (a + 4)(a + 5).",
+    opts: ["A. a² + 20", "B. a² + 9a + 20", "C. 2a + 9", "D. a² + 9a + 9"],
+    ans: "B"
+  },
+  {
+    q: "Find the area of a circle with radius 14 cm. [Take π = 22/7]",
+    opts: ["A. 88 cm²", "B. 616 cm²", "C. 196 cm²", "D. 28 cm²"],
+    ans: "B"
+  },
+  {
+    q: "In a right-angled triangle, if the two shorter sides are 6 cm and 8 cm, the hypotenuse is:",
+    opts: ["A. 10 cm", "B. 14 cm", "C. 100 cm", "D. 48 cm"],
+    ans: "A"
+  },
+  {
+    q: "If a = (2, 6) and b = (5, 3), find a + b.",
+    opts: ["A. (7, 9)", "B. (3, 3)", "C. (7, 3)", "D. (5, 9)"],
+    ans: "A"
+  },
+  {
+    q: "Find 4 × (2, 5).",
+    opts: ["A. (6, 9)", "B. (8, 5)", "C. (8, 20)", "D. (4, 20)"],
+    ans: "C"
+  },
+  {
+    q: "In trigonometry, cos θ = ?",
+    opts: ["A. Adj/Hyp", "B. Opp/Adj", "C. Hyp/Opp", "D. Adj/Opp"],
+    ans: "A"
+  },
+  {
+    q: "A bag contains 5 red and 3 green balls. What is the probability of picking a green ball?",
+    opts: ["A. 3/8", "B. 5/8", "C. 1/3", "D. 3/5"],
+    ans: "A"
+  },
+  {
+    q: "Tossing a fair coin three times, the sample space size is:",
+    opts: ["A. 3", "B. 6", "C. 8", "D. 9"],
+    ans: "C"
+  },
+  {
+    q: "Express 0.45 as a percentage.",
+    opts: ["A. 4.5%", "B. 0.45%", "C. 45%", "D. 450%"],
+    ans: "C"
+  },
+  {
+    q: "Evaluate 4² + 3³.",
+    opts: ["A. 43", "B. 29", "C. 25", "D. 37"],
+    ans: "A"
+  },
+  {
+    q: "Factorize 8x + 24.",
+    opts: ["A. 8(x + 3)", "B. x(8 + 24)", "C. 24(x + 8)", "D. 8(x + 24)"],
+    ans: "A"
+  },
+  {
+    q: "The circumference of a circle formula is:",
+    opts: ["A. πr²", "B. 2πr", "C. πd²", "D. l × w"],
+    ans: "B"
+  },
+  {
+    q: "In the vector (x, y), y represents:",
+    opts: ["A. Horizontal shift", "B. Gradient", "C. Vertical shift", "D. Scalar"],
+    ans: "C"
+  },
+  {
+    q: "Find the probability of scoring an even number on a fair six-sided die.",
+    opts: ["A. 1", "B. 1/6", "C. 1/3", "D. 1/2"],
+    ans: "D"
+  },
+  {
+    q: "Simplify 3x/9 + x/3.",
+    opts: ["A. 4x/12", "B. 2x/3", "C. x", "D. x/3"],
+    ans: "B"
+  },
+  {
+    q: "If the radius of a circle is 21 cm, the diameter is:",
+    opts: ["A. 42 cm", "B. 10.5 cm", "C. 66 cm", "D. 33 cm"],
+    ans: "A"
+  },
+  {
+    q: "Expansion of (3x + 2)²:",
+    opts: ["A. 9x² + 4", "B. 9x² + 6x + 4", "C. 9x² + 12x + 4", "D. 3x² + 12x + 2"],
+    ans: "C"
+  },
+  {
+    q: "Subtract (3, 5) from (8, 11).",
+    opts: ["A. (5, 6)", "B. (11, 16)", "C. (−5, −6)", "D. (24, 55)"],
+    ans: "A"
+  },
+  {
+    q: "What is 30% of 80?",
+    opts: ["A. 8", "B. 24", "C. 30", "D. 20"],
+    ans: "B"
+  },
+  {
+    q: "A triangle with sides 8, 15, 17 is a right-angled triangle.",
+    opts: ["A. True", "B. False", "C. Cannot tell", "D. Only sometimes"],
+    ans: "A"
+  },
+  {
+    q: "The probability of a certain event is:",
+    opts: ["A. 0", "B. 0.5", "C. −1", "D. 1"],
+    ans: "D"
+  },
+  {
+    q: "Simplify 9/15 to its simplest form.",
+    opts: ["A. 1/2", "B. 4/5", "C. 3/5", "D. 2/3"],
+    ans: "C"
+  },
+  {
+    q: "In trigonometry, 'SOH' stands for:",
+    opts: ["A. sin = Opp/Hyp", "B. sin = Adj/Hyp", "C. sin = Opp/Adj", "D. sin = Hyp/Opp"],
+    ans: "A"
+  },
+  {
+    q: "Expand −3x(4x + 5).",
+    opts: ["A. −12x² − 15x", "B. −12x − 15x", "C. 12x² + 15x", "D. −12x² + 15x"],
+    ans: "A"
+  },
+  {
+    q: "Find the perimeter of a rectangle with sides 2½ cm and 4 cm.",
+    opts: ["A. 6½ cm", "B. 13 cm", "C. 10 cm", "D. 10 cm"],
+    ans: "B"
+  },
+  {
+    q: "Rolling a die and picking a card from a deck are:",
+    opts: ["A. Dependent events", "B. Independent events", "C. Mutually exclusive", "D. Impossible"],
+    ans: "B"
+  },
+  {
+    q: "If p = (−2, 3), find 3p.",
+    opts: ["A. (1, 6)", "B. (−6, 9)", "C. (−6, 3)", "D. (−6, −9)"],
+    ans: "B"
+  },
+  {
+    q: "The sum of probabilities of all possible outcomes equals:",
+    opts: ["A. 0", "B. 0.5", "C. 100", "D. 1"],
+    ans: "D"
+  },
+  {
+    q: "Express 3 4/7 as an improper fraction.",
+    opts: ["A. 12/7", "B. 25/7", "C. 21/7", "D. 28/7"],
+    ans: "B"
+  },
+  {
+    q: "Evaluate 36 ÷ 4 + (2 × 8).",
+    opts: ["A. 25", "B. 22", "C. 25", "D. 25"],
+    ans: "A"
+  },
+  {
+    q: "Which vector equals AB + BC?",
+    opts: ["A. BA", "B. CA", "C. AC", "D. CB"],
+    ans: "C"
+  },
+  {
+    q: "Find the area of a semi-circle with radius 14 cm. [π = 22/7]",
+    opts: ["A. 616 cm²", "B. 308 cm²", "C. 88 cm²", "D. 154 cm²"],
+    ans: "B"
+  },
+  {
+    q: "If a student scores 54 out of 90, what is the percentage?",
+    opts: ["A. 54%", "B. 60%", "C. 70%", "D. 80%"],
+    ans: "B"
+  },
+  // ── EXTRA 20 (from Section B topics, all MCQ) ──
+  {
+    q: "A circular garden has a diameter of 14 m. Its area is approximately: [π = 22/7]",
+    opts: ["A. 44 m²", "B. 154 m²", "C. 616 m²", "D. 308 m²"],
+    ans: "B"
+  },
+  {
+    q: "A rectangular stage has length 10 m and width 4 m. Its perimeter is:",
+    opts: ["A. 14 m", "B. 40 m", "C. 28 m", "D. 20 m"],
+    ans: "C"
+  },
+  {
+    q: "Vectors p = (3, 1) and q = (2, 4). The total displacement p + q is:",
+    opts: ["A. (5, 5)", "B. (1, 3)", "C. (6, 4)", "D. (5, 3)"],
+    ans: "A"
+  },
+  {
+    q: "A bag has 5 red, 3 blue, and 2 yellow counters. Probability of NOT picking blue is:",
+    opts: ["A. 3/10", "B. 7/10", "C. 1/2", "D. 2/5"],
+    ans: "B"
+  },
+  {
+    q: "If 2/7 of a field is planted, what fraction remains unplanted?",
+    opts: ["A. 2/7", "B. 5/7", "C. 4/7", "D. 7/9"],
+    ans: "B"
+  },
+  {
+    q: "Simplify using order of operations: 1/2 + 3/4 × 2/3 − 1/4",
+    opts: ["A. 3/4", "B. 1", "C. 5/4", "D. 1/2"],
+    ans: "A"
+  },
+  {
+    q: "Kofi answered 35 out of 50 questions correctly. What percentage did he get WRONG?",
+    opts: ["A. 30%", "B. 35%", "C. 70%", "D. 65%"],
+    ans: "A"
+  },
+  {
+    q: "A worker spends 1/4 on food and 1/3 on rent. What fraction is left?",
+    opts: ["A. 5/12", "B. 7/12", "C. 1/2", "D. 5/7"],
+    ans: "A"
+  },
+  {
+    q: "Express 0.375 as a fraction in its simplest form.",
+    opts: ["A. 3/8", "B. 375/1000", "C. 4/9", "D. 1/3"],
+    ans: "A"
+  },
+  {
+    q: "Expand and simplify 2(x − 3) − 3(x − 4).",
+    opts: ["A. −x + 6", "B. −x − 6", "C. x + 6", "D. −x + 18"],
+    ans: "A"
+  },
+  {
+    q: "Multiply (3x + 2)(3x − 2).",
+    opts: ["A. 9x² + 4", "B. 9x² − 4", "C. 6x² − 4", "D. 9x² − 6x − 4"],
+    ans: "B"
+  },
+  {
+    q: "If x = 3 and y = −1, evaluate (4x² + 2xy) / 2.",
+    opts: ["A. 15", "B. 12", "C. 21", "D. 9"],
+    ans: "A"
+  },
+  {
+    q: "Simplify the algebraic fraction: (a+b)/4 − (a−b)/2.",
+    opts: ["A. (−a + 3b)/4", "B. (a + b)/4", "C. (3b − a)/4", "D. (a − 3b)/4"],
+    ans: "C"
+  },
+  {
+    q: "A ladder 10 m long leans against a wall. If the foot is 6 m away, how high does it reach?",
+    opts: ["A. 6 m", "B. 8 m", "C. 4 m", "D. 7 m"],
+    ans: "B"
+  },
+  {
+    q: "Given u = (−2, 3) and v = (4, 1), calculate 2u + 3v.",
+    opts: ["A. (8, 9)", "B. (8, 3)", "C. (4, 9)", "D. (16, 9)"],
+    ans: "A"
+  },
+  {
+    q: "A fair die is thrown. Probability of getting a number greater than 4 is:",
+    opts: ["A. 1/3", "B. 2/3", "C. 1/6", "D. 1/2"],
+    ans: "A"
+  },
+  {
+    q: "A box has 4 blue and 3 pink pens (with replacement). Probability of picking two blue pens is:",
+    opts: ["A. 16/49", "B. 12/49", "C. 4/7", "D. 8/49"],
+    ans: "A"
+  },
+  {
+    q: "From the same box (4 blue, 3 pink), probability of picking two of the SAME colour is:",
+    opts: ["A. 25/49", "B. 16/49", "C. 9/49", "D. 1/2"],
+    ans: "A"
+  },
+  {
+    q: "Probability of a student passing is 0.65. Probability of failing as a fraction is:",
+    opts: ["A. 13/20", "B. 7/20", "C. 3/5", "D. 2/5"],
+    ans: "B"
+  },
+  {
+    q: "Find the circumference of a circle whose area is 616 cm². [π = 22/7]",
+    opts: ["A. 44 cm", "B. 88 cm", "C. 77 cm", "D. 154 cm"],
+    ans: "B"
+  }
+];
+
+// Shuffle once at load
+let shuffled = [...QUESTIONS];
+let userAnswers = new Array(60).fill(null);
+let timerInterval;
+let totalSeconds = 60 * 60; // 60 min
+let startTime;
+let submitted = false;
+let answeredCount = 0;
+
+const letters = ["A","B","C","D"];
+
+function buildQuiz() {
+  const container = document.getElementById('questions-container');
+  container.innerHTML = '';
+
+  const section1 = document.createElement('div');
+  section1.className = 'section-title';
+  section1.textContent = 'Section A — Objective Test (Questions 1–40)';
+  container.appendChild(section1);
+
+  const section2Title = document.createElement('div');
+  section2Title.id = 'section2-marker';
+
+  shuffled.forEach((q, i) => {
+    if (i === 40) {
+      const s2 = document.createElement('div');
+      s2.className = 'section-title';
+      s2.textContent = 'Section B — Extended Objectives (Questions 41–60)';
+      container.appendChild(s2);
+    }
+
+    const card = document.createElement('div');
+    card.className = 'q-card';
+    card.id = `card-${i}`;
+
+    const qnum = document.createElement('div');
+    qnum.className = 'q-num';
+    qnum.textContent = `Question ${i + 1}`;
+
+    const qtext = document.createElement('div');
+    qtext.className = 'q-text';
+    qtext.textContent = q.q;
+
+    const optsDiv = document.createElement('div');
+    optsDiv.className = 'options';
+
+    q.opts.forEach((opt, oi) => {
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn';
+      btn.id = `q${i}-opt${oi}`;
+
+      const letter = document.createElement('span');
+      letter.className = 'opt-letter';
+      letter.textContent = letters[oi];
+
+      const text = document.createElement('span');
+      text.className = 'opt-text';
+      text.textContent = opt.substring(3); // remove "A. " etc
+
+      btn.appendChild(letter);
+      btn.appendChild(text);
+      btn.onclick = () => selectAnswer(i, oi);
+      optsDiv.appendChild(btn);
+    });
+
+    card.appendChild(qnum);
+    card.appendChild(qtext);
+    card.appendChild(optsDiv);
+    container.appendChild(card);
+  });
+}
+
+function selectAnswer(qIdx, optIdx) {
+  if (submitted) return;
+  if (userAnswers[qIdx] !== null) return; // locked — no changes
+
+  userAnswers[qIdx] = optIdx;
+  answeredCount++;
+
+  // Lock all options for this question
+  const card = document.getElementById(`card-${qIdx}`);
+  const btns = card.querySelectorAll('.opt-btn');
+  btns.forEach(b => b.classList.add('locked'));
+  card.classList.add('answered');
+
+  // Highlight selected
+  const selectedBtn = document.getElementById(`q${qIdx}-opt${optIdx}`);
+  const correctLetter = shuffled[qIdx].ans;
+  const correctIdx = letters.indexOf(correctLetter);
+
+  if (optIdx === correctIdx) {
+    selectedBtn.classList.add('selected-correct');
+  } else {
+    selectedBtn.classList.add('selected-wrong');
+    // Show correct
+    document.getElementById(`q${qIdx}-opt${correctIdx}`).classList.add('show-correct');
+  }
+
+  // Update live score
+  updateLiveScore();
+  updateAnsweredCount();
+}
+
+function updateLiveScore() {
+  let correct = 0;
+  userAnswers.forEach((ans, i) => {
+    if (ans !== null) {
+      const correctIdx = letters.indexOf(shuffled[i].ans);
+      if (ans === correctIdx) correct++;
+    }
+  });
+
+  const pct = Math.round((correct / 60) * 100);
+  document.getElementById('score-val').textContent = `${correct} / 60`;
+  document.getElementById('pct-val').textContent = `${pct}%`;
+  document.getElementById('progress-bar').style.width = `${(answeredCount / 60) * 100}%`;
+}
+
+function updateAnsweredCount() {
+  document.getElementById('answered-count').textContent = `${answeredCount} of 60 answered`;
+}
+
+function startTimer() {
+  startTime = Date.now();
+  timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const remaining = totalSeconds - elapsed;
+
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      document.getElementById('timer-val').textContent = '00:00';
+      submitQuiz(true);
+      return;
+    }
+
+    const m = Math.floor(remaining / 60).toString().padStart(2, '0');
+    const s = (remaining % 60).toString().padStart(2, '0');
+    const timerEl = document.getElementById('timer-val');
+    timerEl.textContent = `${m}:${s}`;
+
+    if (remaining <= 300) {
+      timerEl.classList.add('urgent');
+    }
+  }, 500);
+}
+
+function submitQuiz(autoSubmit = false) {
+  if (submitted) return;
+  submitted = true;
+  clearInterval(timerInterval);
+
+  const elapsed = Math.floor((Date.now() - startTime) / 1000);
+  const used_m = Math.floor(elapsed / 60).toString().padStart(2,'0');
+  const used_s = (elapsed % 60).toString().padStart(2,'0');
+
+  // Lock everything remaining
+  for (let i = 0; i < 60; i++) {
+    if (userAnswers[i] === null) {
+      const card = document.getElementById(`card-${i}`);
+      const btns = card.querySelectorAll('.opt-btn');
+      btns.forEach(b => b.classList.add('locked'));
+      // Reveal correct
+      const correctIdx = letters.indexOf(shuffled[i].ans);
+      document.getElementById(`q${i}-opt${correctIdx}`).classList.add('show-correct');
+    }
+  }
+
+  // Count
+  let correct = 0;
+  userAnswers.forEach((ans, i) => {
+    if (ans !== null) {
+      const correctIdx = letters.indexOf(shuffled[i].ans);
+      if (ans === correctIdx) correct++;
+    }
+  });
+  const wrong = userAnswers.filter((a,i) => a !== null && a !== letters.indexOf(shuffled[i].ans)).length;
+  const skipped = userAnswers.filter(a => a === null).length;
+  const pct = Math.round((correct / 60) * 100);
+
+  // Show result screen
+  setTimeout(() => {
+    document.getElementById('main').classList.add('hidden');
+    const rs = document.getElementById('result-screen');
+    rs.classList.add('visible');
+
+    document.getElementById('result-pct').textContent = pct + '%';
+    document.getElementById('rs-correct').textContent = correct;
+    document.getElementById('rs-wrong').textContent = wrong;
+    document.getElementById('rs-skipped').textContent = skipped;
+    document.getElementById('rs-time').textContent = `${used_m}:${used_s}`;
+
+    // Conic gradient for circle
+    const circle = document.getElementById('result-circle');
+    circle.style.background = `conic-gradient(#f0c040 ${pct}%, #252b38 ${pct}%)`;
+
+    // Grade
+    let grade, gradeColor;
+    if (pct >= 80) { grade = '🏆 Excellent — A'; gradeColor = '#2dca73'; }
+    else if (pct >= 70) { grade = '🎉 Very Good — B'; gradeColor = '#3ecfcf'; }
+    else if (pct >= 60) { grade = '👍 Good — C'; gradeColor = '#f0c040'; }
+    else if (pct >= 50) { grade = '📚 Average — D'; gradeColor = '#f0a030'; }
+    else { grade = '⚠️ Needs Improvement — F'; gradeColor = '#e84a5f'; }
+
+    const gradeEl = document.getElementById('result-grade');
+    gradeEl.textContent = grade;
+    gradeEl.style.background = gradeColor + '22';
+    gradeEl.style.color = gradeColor;
+    gradeEl.style.border = `1px solid ${gradeColor}55`;
+
+    document.getElementById('result-title').textContent = autoSubmit ? "Time's Up!" : "Quiz Complete!";
+    document.getElementById('result-sub').textContent = `You scored ${correct} out of 60`;
+  }, 400);
+}
+
+function retryQuiz() {
+  submitted = false;
+  userAnswers = new Array(60).fill(null);
+  answeredCount = 0;
+  totalSeconds = 60 * 60;
+
+  document.getElementById('result-screen').classList.remove('visible');
+  document.getElementById('main').classList.remove('hidden');
+  document.getElementById('score-val').textContent = '0 / 60';
+  document.getElementById('pct-val').textContent = '0%';
+  document.getElementById('timer-val').textContent = '60:00';
+  document.getElementById('timer-val').classList.remove('urgent');
+  document.getElementById('progress-bar').style.width = '0%';
+  document.getElementById('answered-count').textContent = '0 of 60 answered';
+
+  buildQuiz();
+  startTimer();
+  window.scrollTo(0,0);
+}
+
+// INIT
+buildQuiz();
+startTimer();
+</script>
+</body>
+</html>
